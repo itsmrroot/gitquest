@@ -6,7 +6,7 @@
 
 ## 🚀 Live Demo
 
-**[▶ Play GitQuest](https://your-username.github.io/gitquest)**
+**[▶ Play GitQuest](https://itsmrroot.github.io/gitquest/)**
 
 ---
 
@@ -149,7 +149,7 @@ python3 -m http.server 8080
 ### Option 3: GitHub Pages
 1. Fork this repo
 2. Go to Settings → Pages → Deploy from `main` branch
-3. Done! Live at `https://your-username.github.io/gitquest`
+3. Done! Live at `https://itsmrroot.github.io/gitquest/`
 
 ---
 
