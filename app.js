@@ -38,8 +38,8 @@ class GitQuestApp {
       this._loadChallenge(TIERS[0], TIERS[0].challenges[0]);
     }
 
-    this._log('info', 'Welcome to GitQuest! ✨');
-    this._log('info', 'Type git commands below. Check the Mission panel on the right →');
+    this._log('info', t('welcome'));
+    this._log('info', t('welcomeSub'));
     this._focusInput();
   }
 
@@ -559,3 +559,177 @@ window.addEventListener('DOMContentLoaded', () => {
   window.app = new GitQuestApp();
   window.app.init();
 });
+
+// ══════════════════════════════════════════════
+// THEME & LANGUAGE — appended to GitQuestApp
+// ══════════════════════════════════════════════
+
+// Patch init to also set up theme + language
+const _origInit = GitQuestApp.prototype.init;
+GitQuestApp.prototype.init = function() {
+  this._initTheme();
+  this._initLang();
+  _origInit.call(this);
+  this._applyI18n();
+};
+
+// ── THEME ──
+GitQuestApp.prototype._initTheme = function() {
+  const saved = localStorage.getItem('gq_theme') || 'dark';
+  this._setTheme(saved);
+
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    this._setTheme(current === 'dark' ? 'light' : 'dark');
+  });
+};
+
+GitQuestApp.prototype._setTheme = function(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('gq_theme', theme);
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  // Re-render graph so SVG colors update
+  this.renderer?.render();
+};
+
+// ── LANGUAGE ──
+GitQuestApp.prototype._initLang = function() {
+  // Build dropdown
+  const dropdown = document.getElementById('lang-dropdown');
+  if (!dropdown) return;
+
+  const currentCode = localStorage.getItem('gq_lang') || 'en';
+  dropdown.innerHTML = '';
+
+  Object.entries(LANGUAGES).forEach(([code, lang]) => {
+    const opt = document.createElement('div');
+    opt.className = 'lang-option' + (code === currentCode ? ' active' : '');
+    opt.innerHTML = `<span class="lang-flag">${lang.flag}</span><span>${lang.name}</span>`;
+    opt.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._setLang(code);
+      document.getElementById('lang-picker')?.classList.remove('open');
+    });
+    dropdown.appendChild(opt);
+  });
+
+  // Update current button display
+  this._updateLangBtn(currentCode);
+
+  // Toggle dropdown
+  document.getElementById('lang-current-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('lang-picker')?.classList.toggle('open');
+  });
+
+  // Close on outside click
+  document.addEventListener('click', () => {
+    document.getElementById('lang-picker')?.classList.remove('open');
+  });
+};
+
+GitQuestApp.prototype._setLang = function(code) {
+  localStorage.setItem('gq_lang', code);
+  this._updateLangBtn(code);
+
+  // Update dropdown active state
+  document.querySelectorAll('.lang-option').forEach((opt, i) => {
+    const langCode = Object.keys(LANGUAGES)[i];
+    opt.classList.toggle('active', langCode === code);
+  });
+
+  // Apply RTL if needed
+  const lang = LANGUAGES[code];
+  document.documentElement.dir = lang.dir || 'ltr';
+  document.documentElement.lang = code;
+
+  // Re-apply all translations
+  this._applyI18n();
+
+  // Reload current challenge panel
+  if (this.currentChallenge) {
+    this._renderMission(this.currentChallenge);
+  } else if (this.mode === 'sandbox') {
+    this._renderSandboxPanel();
+  }
+
+  // Re-log welcome in new lang
+  const out = document.getElementById('terminal-output');
+  if (out && !out.hasChildNodes()) {
+    this._log('info', t('welcome'));
+    this._log('info', t('welcomeSub'));
+  }
+};
+
+GitQuestApp.prototype._updateLangBtn = function(code) {
+  const lang = LANGUAGES[code] || LANGUAGES.en;
+  const flag = document.getElementById('lang-flag');
+  const name = document.getElementById('lang-name');
+  if (flag) flag.textContent = lang.flag;
+  if (name) name.textContent = code.toUpperCase();
+};
+
+// ── APPLY TRANSLATIONS ──
+GitQuestApp.prototype._applyI18n = function() {
+  // Translate all data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const val = t(key);
+    if (val) el.textContent = val;
+  });
+
+  // Translate placeholders
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    const val = t(key);
+    if (val) el.placeholder = val;
+  });
+
+  // Quick questions
+  document.querySelectorAll('.quick-q').forEach(btn => {
+    const qi = btn.getAttribute('data-qi');
+    const qf = btn.getAttribute('data-qf');
+    if (qi) btn.textContent = t(qi);
+    if (qf) {
+      btn.onclick = () => {
+        const inp = document.getElementById('ai-input');
+        if (inp) { inp.value = t(qf); }
+        this._sendChat();
+      };
+    }
+  });
+
+  // Update terminal placeholder
+  const inp = document.getElementById('cmd-input');
+  if (inp) inp.placeholder = 'git commit -m "' + (t('welcome') || 'First commit') + '"';
+};
+
+// Patch _sandbox to use translations
+const _origSandbox = GitQuestApp.prototype._sandbox;
+GitQuestApp.prototype._sandbox = function() {
+  this.mode = 'sandbox';
+  this.currentChallenge = null;
+  this.engine.reset();
+  this.renderer?.render();
+  const out = document.getElementById('terminal-output');
+  if (out) out.innerHTML = '';
+  this._log('info', t('sandboxMode'));
+  this._renderSandboxPanel();
+};
+
+GitQuestApp.prototype._renderSandboxPanel = function() {
+  const panel = document.getElementById('mission-content');
+  if (panel) panel.innerHTML = `
+    <div style="text-align:center;padding:50px 20px;color:var(--text-muted)">
+      <div style="font-size:48px;margin-bottom:12px">🏖️</div>
+      <div style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:8px">${t('sandboxTitle')}</div>
+      <div style="font-size:13px;line-height:1.7">${t('sandboxDesc').replace(/\n/g,'<br>')}</div>
+    </div>`;
+};
+
+// Patch _log to use translated welcome on init
+const _origLog = GitQuestApp.prototype._log;
+GitQuestApp.prototype._logI18n = function(key) {
+  this._log('info', t(key));
+};

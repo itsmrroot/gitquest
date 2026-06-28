@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -20,36 +20,51 @@
       <div class="logo-icon">⎇</div>
       <div class="logo-text">Git<span>Quest</span></div>
     </div>
+
     <div class="header-center">
-      <button class="tab-btn active" data-mode="learn">📚 Learn</button>
-      <button class="tab-btn" data-mode="sandbox">🏖️ Sandbox</button>
+      <button class="tab-btn active" data-mode="learn" data-i18n="learn">📚 Learn</button>
+      <button class="tab-btn" data-mode="sandbox" data-i18n="sandbox">🏖️ Sandbox</button>
     </div>
+
     <div class="header-right">
       <div class="xp-badge">⚡ <span id="xp-count">0 XP</span></div>
       <div class="level-badge" id="level-badge">Rookie</div>
+
+      <!-- Language Picker -->
+      <div class="lang-picker" id="lang-picker">
+        <button class="lang-current" id="lang-current-btn" aria-label="Change language">
+          <span id="lang-flag">🇬🇧</span>
+          <span id="lang-name">EN</span>
+          <span class="arrow">▾</span>
+        </button>
+        <div class="lang-dropdown" id="lang-dropdown">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+      <!-- Theme Toggle -->
+      <button class="theme-toggle" id="theme-toggle" title="Toggle dark/light mode" aria-label="Toggle theme">🌙</button>
     </div>
   </header>
 
   <!-- ── LEFT SIDEBAR ── -->
   <aside id="sidebar">
-    <div style="padding:12px 16px 8px;border-bottom:1px solid var(--border);flex-shrink:0">
-      <div class="sidebar-title">Challenges</div>
+    <div class="sidebar-top">
+      <div class="sidebar-title" data-i18n="challenges">Challenges</div>
     </div>
-    <div id="challenge-list" style="overflow-y:auto;flex:1"></div>
+    <div id="challenge-list"></div>
   </aside>
 
   <!-- ── MAIN ── -->
   <main id="main">
 
-    <!-- Graph area -->
     <div id="graph-area">
       <svg id="git-canvas" xmlns="http://www.w3.org/2000/svg"></svg>
-      <div class="canvas-hint">Drag to pan · Hover commits for details</div>
+      <div class="canvas-hint" data-i18n="draghint">Drag to pan · Hover commits for details</div>
       <div class="node-tooltip" id="node-tooltip"></div>
       <div id="autocomplete"></div>
     </div>
 
-    <!-- Terminal -->
     <div id="terminal-area">
       <div class="terminal-header">
         <div class="terminal-dots">
@@ -57,23 +72,17 @@
           <div class="terminal-dot yellow"></div>
           <div class="terminal-dot green"></div>
         </div>
-        <div class="terminal-title">bash — gitquest</div>
+        <div class="terminal-title" data-i18n="termTitle">bash — gitquest</div>
         <div class="terminal-actions">
-          <button class="terminal-btn" id="btn-clear">clear</button>
-          <button class="terminal-btn" id="btn-reset">⟳ reset</button>
+          <button class="terminal-btn" id="btn-clear" data-i18n="clear">clear</button>
+          <button class="terminal-btn" id="btn-reset" data-i18n="reset">⟳ reset</button>
         </div>
       </div>
       <div id="terminal-output"></div>
       <div class="terminal-input-row">
         <span class="prompt-label" id="prompt-branch">main</span>
         <span class="prompt-label" style="color:var(--text-muted)"> $ </span>
-        <input
-          type="text"
-          id="cmd-input"
-          placeholder='git commit -m "My first commit"'
-          autocomplete="off"
-          spellcheck="false"
-        />
+        <input type="text" id="cmd-input" placeholder='git commit -m "My first commit"' autocomplete="off" spellcheck="false" />
       </div>
     </div>
 
@@ -82,16 +91,14 @@
   <!-- ── RIGHT PANEL ── -->
   <aside id="right-panel">
     <div class="panel-tabs">
-      <div class="panel-tab active" data-tab="mission">Mission</div>
-      <div class="panel-tab" data-tab="cheatsheet">Cheatsheet</div>
-      <div class="panel-tab" data-tab="ai-chat">AI Tutor</div>
+      <div class="panel-tab active" data-tab="mission" data-i18n="mission">Mission</div>
+      <div class="panel-tab" data-tab="cheatsheet" data-i18n="cheatsheet">Cheatsheet</div>
+      <div class="panel-tab" data-tab="ai-chat" data-i18n="aiTutor">AI Tutor</div>
     </div>
 
     <!-- Mission -->
     <div class="panel-content active" id="mission-content">
-      <div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:40px">
-        Loading challenge...
-      </div>
+      <div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:40px" data-i18n="loadingChallenge">Loading challenge...</div>
     </div>
 
     <!-- Cheatsheet -->
@@ -144,45 +151,45 @@
 
     <!-- AI Chat -->
     <div class="panel-content" id="ai-chat-content">
-      <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:12px">
+      <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:12px" data-i18n="aiContext">
         Ask anything about Git. The AI tutor knows your current challenge and repo state.
       </p>
       <div class="ai-chat-msgs" id="ai-chat-messages"></div>
       <div class="ai-input-row">
-        <textarea class="ai-input" id="ai-input" placeholder="Ask anything about Git..." rows="2"></textarea>
-        <button class="ai-send-btn" id="ai-send">Ask</button>
+        <textarea class="ai-input" id="ai-input" rows="2" data-i18n-placeholder="askAnything" placeholder="Ask anything about Git..."></textarea>
+        <button class="ai-send-btn" id="ai-send" data-i18n="ask">Ask</button>
       </div>
       <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Quick questions</div>
-        <button class="hint-btn quick-q" data-q="What is the difference between git merge and git rebase?">merge vs rebase?</button>
-        <button class="hint-btn quick-q" data-q="When should I use git reset vs git revert?">reset vs revert?</button>
-        <button class="hint-btn quick-q" data-q="What is detached HEAD state and how do I fix it?">Detached HEAD?</button>
-        <button class="hint-btn quick-q" data-q="What is the best Git branching strategy for a small team?">Best branching strategy?</button>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px" data-i18n="quickQuestions">Quick questions</div>
+        <button class="hint-btn quick-q" data-qi="q1" data-qf="q1full"></button>
+        <button class="hint-btn quick-q" data-qi="q2" data-qf="q2full"></button>
+        <button class="hint-btn quick-q" data-qi="q3" data-qf="q3full"></button>
+        <button class="hint-btn quick-q" data-qi="q4" data-qf="q4full"></button>
       </div>
     </div>
 
   </aside>
-
 </div>
 
-<!-- Success overlay -->
+<!-- Success Overlay -->
 <div id="success-overlay">
   <div class="success-card">
     <div class="success-icon">🎉</div>
-    <div class="success-title">Challenge Complete!</div>
+    <div class="success-title" data-i18n="challengeComplete">Challenge Complete!</div>
     <div class="success-sub"></div>
     <div class="xp-earned"></div>
     <div>
-      <button class="next-btn">Next Challenge →</button>
-      <button class="retry-btn">Keep Exploring</button>
+      <button class="next-btn" data-i18n="nextChallenge">Next Challenge →</button>
+      <button class="retry-btn" data-i18n="keepExploring">Keep Exploring</button>
     </div>
   </div>
 </div>
 
-<!-- Scripts — ORDER MATTERS: engine → renderer → challenges → app -->
+<!-- Scripts — ORDER MATTERS -->
 <script src="js/git-engine.js"></script>
 <script src="js/graph-renderer.js"></script>
 <script src="js/challenges.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/app.js"></script>
 
 </body>
