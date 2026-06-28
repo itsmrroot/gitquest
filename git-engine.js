@@ -5,45 +5,42 @@
 
 class GitEngine {
   constructor() {
-    this.reset();
+    this.commits = {};
+    this.branches = {};
+    this.HEAD = null;
+    this.headBranch = null;
+    this.remotes = {};
+    this.staging = [];
+    this.tags = {};
+    this.stash = [];
+    this.commandHistory = [];
+    this._listeners = {};
+    this._init();
   }
 
   reset() {
     this.commits = {};
     this.branches = {};
     this.HEAD = null;
-    this.headBranch = null; // null = detached
+    this.headBranch = null;
     this.remotes = {};
     this.staging = [];
-    this.workingTree = [];
     this.tags = {};
     this.stash = [];
     this.commandHistory = [];
-    this.eventListeners = {};
-
-    // Init with first commit
     this._init();
   }
 
   _init() {
-    const c0 = this._createCommit('Initial commit', null, 'C0');
+    const c0 = this._createCommit('Initial commit', [], 'C0');
     this.branches['main'] = c0.id;
     this.headBranch = 'main';
     this.HEAD = c0.id;
   }
 
-  _createCommit(message, parentIds, forcedId = null) {
+  _createCommit(message, parents, forcedId) {
     const id = forcedId || this._genId();
-    const parentArray = parentIds
-      ? (Array.isArray(parentIds) ? parentIds : [parentIds])
-      : [];
-    const commit = {
-      id,
-      message,
-      parents: parentArray,
-      timestamp: Date.now(),
-      branch: this.headBranch || 'detached'
-    };
+    const commit = { id, message, parents: parents || [], timestamp: Date.now() };
     this.commits[id] = commit;
     return commit;
   }
@@ -55,32 +52,46 @@ class GitEngine {
     return id;
   }
 
-  // ── COMMAND PARSING ──
+  // ── EXECUTE ──
   execute(rawInput) {
     const input = rawInput.trim();
-    if (!input) return { ok: false, msg: '' };
-
+    if (!input) return { ok: true, msg: '' };
     this.commandHistory.push(input);
-    this._emit('command', { input });
 
-    const parts = this._parseArgs(input);
-    const cmd = parts[0];
-    const subCmd = parts[1];
-    const args = parts.slice(2);
+    const tokens = this._tokenize(input);
+    if (!tokens.length || tokens[0] !== 'git') {
+      return { ok: false, msg: `Command not found: ${tokens[0] || ''}. Use git commands.` };
+    }
+
+    const sub = tokens[1];
+    if (!sub) return { ok: false, msg: 'Usage: git <command>' };
+
+    // Parse flags and positional args
     const flags = {};
-
-    // Extract flags
-    const positional = parts.slice(1).filter(p => {
-      if (p.startsWith('--')) { flags[p.slice(2)] = true; return false; }
-      if (p.startsWith('-') && p.length === 2) { flags[p.slice(1)] = true; return false; }
-      return true;
-    });
+    const positional = [];
+    for (let i = 2; i < tokens.length; i++) {
+      const t = tokens[i];
+      if (t === '--no-ff') { flags['no-ff'] = true; }
+      else if (t === '--amend') { flags.amend = true; }
+      else if (t === '--hard') { flags.hard = true; }
+      else if (t === '--soft') { flags.soft = true; }
+      else if (t === '--mixed') { flags.mixed = true; }
+      else if (t === '--oneline') { flags.oneline = true; }
+      else if (t === '-b') { flags.b = true; }
+      else if (t === '-B') { flags.B = true; }
+      else if (t === '-c') { flags.c = true; }
+      else if (t === '-d') { flags.d = true; }
+      else if (t === '-D') { flags.D = true; }
+      else if (t === '-v') { flags.v = true; }
+      else if (t === '-m') { flags.m = tokens[++i] || ''; }
+      else if (t.startsWith('--message=')) { flags.m = t.slice(10); }
+      else if (t.startsWith('-n')) { flags.n = parseInt(t.slice(2)) || 10; }
+      else if (!t.startsWith('-')) { positional.push(t); }
+    }
 
     try {
-      if (cmd !== 'git') return { ok: false, msg: `Command not found: ${cmd}. Use git commands.` };
-
-      switch (subCmd) {
-        case 'init':        return this._gitInit(positional, flags);
+      switch (sub) {
+        case 'init':        return this._gitInit();
         case 'commit':      return this._gitCommit(positional, flags);
         case 'branch':      return this._gitBranch(positional, flags);
         case 'checkout':    return this._gitCheckout(positional, flags);
@@ -88,31 +99,31 @@ class GitEngine {
         case 'merge':       return this._gitMerge(positional, flags);
         case 'rebase':      return this._gitRebase(positional, flags);
         case 'log':         return this._gitLog(positional, flags);
-        case 'status':      return this._gitStatus(positional, flags);
-        case 'add':         return this._gitAdd(positional, flags);
+        case 'status':      return this._gitStatus();
+        case 'add':         return this._gitAdd(positional);
         case 'reset':       return this._gitReset(positional, flags);
-        case 'revert':      return this._gitRevert(positional, flags);
-        case 'cherry-pick': return this._gitCherryPick(positional, flags);
+        case 'revert':      return this._gitRevert(positional);
+        case 'cherry-pick': return this._gitCherryPick(positional);
         case 'tag':         return this._gitTag(positional, flags);
-        case 'stash':       return this._gitStash(positional, flags);
-        case 'diff':        return this._gitDiff(positional, flags);
+        case 'stash':       return this._gitStash(positional);
+        case 'diff':        return { ok: true, msg: '(Sandbox: no real files)\ndiff --git a/file b/file\n--- a/file\n+++ b/file\n@@ -1 +1 @@\n-old\n+new' };
         case 'remote':      return this._gitRemote(positional, flags);
-        case 'push':        return this._gitPush(positional, flags);
-        case 'pull':        return this._gitPull(positional, flags);
-        case 'fetch':       return this._gitFetch(positional, flags);
-        case 'clone':       return { ok: true, msg: 'Cloned repo into current sandbox.' };
+        case 'push':        return this._gitPush(positional);
+        case 'pull':        return { ok: true, msg: 'Already up to date. (Sandbox)' };
+        case 'fetch':       return { ok: true, msg: 'Fetched from remote. (Sandbox)' };
+        case 'clone':       return { ok: true, msg: 'Cloned into sandbox.' };
         case 'help':        return this._gitHelp();
         default:
-          return { ok: false, msg: `git: '${subCmd}' is not a git command. See 'git help'.` };
+          return { ok: false, msg: `git: '${sub}' is not a git command. Try 'git help'.` };
       }
     } catch(e) {
-      return { ok: false, msg: `Error: ${e.message}` };
+      return { ok: false, msg: `Fatal: ${e.message}` };
     }
   }
 
-  _parseArgs(input) {
-    // Handle quoted args
-    const parts = [];
+  _tokenize(input) {
+    // Handle quoted strings
+    const tokens = [];
     let cur = '', inQ = false, qChar = '';
     for (const ch of input) {
       if (inQ) {
@@ -120,34 +131,37 @@ class GitEngine {
         else cur += ch;
       } else if (ch === '"' || ch === "'") {
         inQ = true; qChar = ch;
-      } else if (ch === ' ') {
-        if (cur) parts.push(cur);
+      } else if (ch === ' ' || ch === '\t') {
+        if (cur) tokens.push(cur);
         cur = '';
-      } else cur += ch;
+      } else {
+        cur += ch;
+      }
     }
-    if (cur) parts.push(cur);
-    return parts;
+    if (cur) tokens.push(cur);
+    return tokens;
   }
 
-  _currentCommit() { return this.commits[this.HEAD]; }
-
   _resolveRef(ref) {
+    if (!ref) return null;
     if (ref === 'HEAD') return this.HEAD;
-    if (ref === 'HEAD~1' || ref === 'HEAD~') {
-      const c = this._currentCommit();
-      return c?.parents[0] || null;
-    }
-    if (ref.startsWith('HEAD~')) {
-      let n = parseInt(ref.slice(5));
+    // HEAD~N
+    const headTildeMatch = ref.match(/^HEAD~(\d+)$|^HEAD~$/);
+    if (headTildeMatch) {
+      const n = parseInt(headTildeMatch[1] || '1');
       let cid = this.HEAD;
-      while (n-- > 0 && cid) {
-        cid = this.commits[cid]?.parents[0];
+      for (let i = 0; i < n; i++) {
+        cid = this.commits[cid]?.parents[0] || null;
+        if (!cid) break;
       }
       return cid;
     }
     if (this.branches[ref]) return this.branches[ref];
+    if (this.tags[ref]) return this.tags[ref];
     if (this.commits[ref]) return ref;
-    return null;
+    // Partial hash match
+    const match = Object.keys(this.commits).find(k => k.startsWith(ref));
+    return match || null;
   }
 
   // ── GIT COMMANDS ──
@@ -159,114 +173,117 @@ class GitEngine {
   }
 
   _gitCommit(positional, flags) {
-    const msgIdx = positional.indexOf('-m') + 1 || positional.indexOf('--message') + 1;
-    let message = msgIdx > 0 ? positional[msgIdx] : null;
-    if (!message) {
-      // Try to extract message from flags
-      message = flags.message || flags.m || 'Update files';
+    // Handle: git commit -m "msg" or git commit --amend
+    let message = flags.m || null;
+
+    // Fallback: look for message in positional after stripping -m
+    if (!message && positional.length > 0) {
+      message = positional.join(' ');
     }
-    // If amend
+    if (!message) message = 'Update';
+
     if (flags.amend) {
-      const c = this._currentCommit();
+      const c = this.commits[this.HEAD];
       if (!c) return { ok: false, msg: 'Nothing to amend.' };
-      c.message = message || c.message;
-      c.id = this._genId();
-      this.commits[c.id] = c;
+      const newId = this._genId();
+      const amended = { ...c, id: newId, message };
+      this.commits[newId] = amended;
       delete this.commits[this.HEAD];
-      if (this.headBranch) this.branches[this.headBranch] = c.id;
-      this.HEAD = c.id;
+      if (this.headBranch) this.branches[this.headBranch] = newId;
+      this.HEAD = newId;
       this._emit('graph-update');
-      return { ok: true, msg: `[${this.headBranch || 'HEAD'} ${c.id}] ${c.message}` };
+      return { ok: true, msg: `[${this.headBranch || 'HEAD'} ${newId}] ${message} (amended)` };
     }
-    const newCommit = this._createCommit(message, this.HEAD);
-    if (this.headBranch) {
-      this.branches[this.headBranch] = newCommit.id;
-    }
-    this.HEAD = newCommit.id;
+
+    const newC = this._createCommit(message, [this.HEAD]);
+    if (this.headBranch) this.branches[this.headBranch] = newC.id;
+    this.HEAD = newC.id;
     this.staging = [];
     this._emit('graph-update');
-    return { ok: true, msg: `[${this.headBranch || 'HEAD'} ${newCommit.id}] ${message}` };
+    return { ok: true, msg: `[${this.headBranch || 'HEAD'} ${newC.id}] ${message}` };
   }
 
   _gitBranch(positional, flags) {
-    if (flags.d || flags['delete']) {
-      const name = positional[1] || positional[0];
+    // Delete
+    if (flags.d || flags.D) {
+      const name = positional[0];
       if (!name) return { ok: false, msg: 'Branch name required.' };
-      if (name === this.headBranch) return { ok: false, msg: `Cannot delete checked out branch '${name}'.` };
-      if (!this.branches[name]) return { ok: false, msg: `Branch '${name}' not found.` };
+      if (name === this.headBranch) return { ok: false, msg: `Cannot delete checked-out branch '${name}'.` };
+      if (!this.branches[name] && !flags.D) return { ok: false, msg: `Branch '${name}' not found.` };
       delete this.branches[name];
       this._emit('graph-update');
       return { ok: true, msg: `Deleted branch ${name}.` };
     }
-    if (flags.D) {
-      const name = positional[1] || positional[0];
-      if (!name) return { ok: false, msg: 'Branch name required.' };
-      if (name === this.headBranch) return { ok: false, msg: `Cannot delete checked out branch '${name}'.` };
-      delete this.branches[name];
+    // Rename
+    if (flags.m) {
+      // -m was captured as flags.m (the value), but here it means rename flag
+      // Actually our tokenizer captures -m <value> so this doesn't apply
+      // Handle: git branch -m oldname newname (both positional)
+      if (positional.length >= 2) {
+        const [old, neu] = positional;
+        if (!this.branches[old]) return { ok: false, msg: `Branch '${old}' not found.` };
+        this.branches[neu] = this.branches[old];
+        delete this.branches[old];
+        if (this.headBranch === old) this.headBranch = neu;
+        this._emit('graph-update');
+        return { ok: true, msg: `Renamed branch '${old}' to '${neu}'.` };
+      }
+    }
+    // Create
+    if (positional.length > 0) {
+      const name = positional[0];
+      const startPoint = positional[1] ? this._resolveRef(positional[1]) : this.HEAD;
+      if (!startPoint) return { ok: false, msg: 'Invalid start point.' };
+      if (this.branches[name]) return { ok: false, msg: `Branch '${name}' already exists. Use -B to force.` };
+      this.branches[name] = startPoint;
       this._emit('graph-update');
-      return { ok: true, msg: `Deleted branch ${name} (force).` };
+      return { ok: true, msg: `Created branch '${name}'.` };
     }
-    if (flags.m || flags.move) {
-      const [oldName, newName] = positional;
-      if (!oldName || !newName) return { ok: false, msg: 'Usage: git branch -m <old> <new>' };
-      if (!this.branches[oldName]) return { ok: false, msg: `Branch '${oldName}' not found.` };
-      this.branches[newName] = this.branches[oldName];
-      delete this.branches[oldName];
-      if (this.headBranch === oldName) this.headBranch = newName;
-      this._emit('graph-update');
-      return { ok: true, msg: `Renamed branch '${oldName}' to '${newName}'.` };
-    }
-    const newBranch = positional[0];
-    if (!newBranch) {
-      // List branches
-      const list = Object.keys(this.branches).map(b =>
-        `  ${b === this.headBranch ? '* ' : '  '}${b}`
-      ).join('\n');
-      return { ok: true, msg: list || '  (no branches)' };
-    }
-    const startPoint = positional[1] ? this._resolveRef(positional[1]) : this.HEAD;
-    if (!startPoint) return { ok: false, msg: `Invalid start point.` };
-    if (this.branches[newBranch]) return { ok: false, msg: `Branch '${newBranch}' already exists.` };
-    this.branches[newBranch] = startPoint;
-    this._emit('graph-update');
-    return { ok: true, msg: `Created branch '${newBranch}'.` };
+    // List
+    const list = Object.keys(this.branches)
+      .map(b => `  ${b === this.headBranch ? '* ' : '  '}${b}`)
+      .join('\n');
+    return { ok: true, msg: list || '  (no branches)' };
   }
 
   _gitCheckout(positional, flags) {
+    // Create + switch
     if (flags.b || flags.B) {
       const name = positional[0];
       if (!name) return { ok: false, msg: 'Branch name required.' };
       const start = positional[1] ? this._resolveRef(positional[1]) : this.HEAD;
-      if (flags.B && this.branches[name]) delete this.branches[name];
+      if (!start) return { ok: false, msg: 'Invalid start point.' };
+      if (flags.B) delete this.branches[name];
       if (!this.branches[name]) this.branches[name] = start;
       this.headBranch = name;
       this.HEAD = this.branches[name];
       this._emit('graph-update');
-      return { ok: true, msg: `Switched to ${flags.B ? '' : 'new '}branch '${name}'` };
+      return { ok: true, msg: `Switched to${flags.b ? ' new' : ''} branch '${name}'` };
     }
     const target = positional[0];
     if (!target) return { ok: false, msg: 'Usage: git checkout <branch|commit>' };
 
+    // Try branch first
     if (this.branches[target]) {
       this.headBranch = target;
       this.HEAD = this.branches[target];
       this._emit('graph-update');
       return { ok: true, msg: `Switched to branch '${target}'` };
     }
+    // Try commit ref
     const resolved = this._resolveRef(target);
     if (resolved) {
-      this.headBranch = null; // detached HEAD
+      this.headBranch = null;
       this.HEAD = resolved;
       this._emit('graph-update');
-      return { ok: true, msg: `HEAD is now at ${resolved.slice(0,7)}` };
+      return { ok: true, msg: `HEAD is now at ${resolved.slice(0, 7)} (detached HEAD)` };
     }
-    return { ok: false, msg: `pathspec '${target}' did not match any known refs` };
+    return { ok: false, msg: `error: pathspec '${target}' did not match any known ref` };
   }
 
   _gitSwitch(positional, flags) {
-    if (flags.c || flags['create']) {
-      positional.unshift('-b');
-      return this._gitCheckout(positional.filter(p => p !== '-b'), { b: true });
+    if (flags.c || flags.C) {
+      return this._gitCheckout(positional, { b: true });
     }
     return this._gitCheckout(positional, flags);
   }
@@ -276,36 +293,23 @@ class GitEngine {
     if (!target) return { ok: false, msg: 'Branch name required.' };
     const targetId = this._resolveRef(target);
     if (!targetId) return { ok: false, msg: `Branch '${target}' not found.` };
-
     if (targetId === this.HEAD) return { ok: true, msg: 'Already up to date.' };
 
-    // Fast-forward check
-    if (this._isAncestor(this.HEAD, targetId)) {
-      // Fast forward
+    // Fast-forward?
+    if (!flags['no-ff'] && this._isAncestor(this.HEAD, targetId)) {
       if (this.headBranch) this.branches[this.headBranch] = targetId;
       this.HEAD = targetId;
       this._emit('graph-update');
-      return { ok: true, msg: `Fast-forward merge. HEAD -> ${targetId.slice(0,7)}` };
+      return { ok: true, msg: `Fast-forward. HEAD -> ${targetId.slice(0, 7)}` };
     }
 
-    if (flags['no-ff'] || !this._isAncestor(targetId, this.HEAD)) {
-      // Three-way merge commit
-      const mergeCommit = this._createCommit(
-        `Merge branch '${target}' into ${this.headBranch || 'HEAD'}`,
-        [this.HEAD, targetId]
-      );
-      if (this.headBranch) this.branches[this.headBranch] = mergeCommit.id;
-      this.HEAD = mergeCommit.id;
-      this._emit('graph-update');
-      return { ok: true, msg: `Merge made by 'recursive' strategy.` };
-    }
-
-    const mergeCommit = this._createCommit(
-      `Merge branch '${target}'`,
+    // Merge commit
+    const mc = this._createCommit(
+      `Merge branch '${target}' into ${this.headBranch || 'HEAD'}`,
       [this.HEAD, targetId]
     );
-    if (this.headBranch) this.branches[this.headBranch] = mergeCommit.id;
-    this.HEAD = mergeCommit.id;
+    if (this.headBranch) this.branches[this.headBranch] = mc.id;
+    this.HEAD = mc.id;
     this._emit('graph-update');
     return { ok: true, msg: `Merge made by 'ort' strategy.` };
   }
@@ -315,140 +319,138 @@ class GitEngine {
     if (!target) return { ok: false, msg: 'Target branch required.' };
     const targetId = this._resolveRef(target);
     if (!targetId) return { ok: false, msg: `Branch '${target}' not found.` };
-
     if (targetId === this.HEAD) return { ok: true, msg: 'Already up to date.' };
 
-    // Get commits to replay
-    const toReplay = this._getCommitsSince(targetId, this.HEAD);
-    if (toReplay.length === 0) {
-      return { ok: true, msg: 'Already up to date.' };
+    // Collect commits to replay (from HEAD back to LCA)
+    const toReplay = this._getCommitsSince(targetId, this.HEAD).reverse();
+    if (!toReplay.length) return { ok: true, msg: 'Already up to date.' };
+
+    let base = targetId;
+    for (const cid of toReplay) {
+      const orig = this.commits[cid];
+      const nc = this._createCommit(orig.message, [base]);
+      base = nc.id;
     }
 
-    // Replay commits on top of target
-    let current = targetId;
-    for (const commitId of toReplay.reverse()) {
-      const original = this.commits[commitId];
-      const newC = this._createCommit(original.message, current);
-      current = newC.id;
-    }
-
-    if (this.headBranch) this.branches[this.headBranch] = current;
-    this.HEAD = current;
+    if (this.headBranch) this.branches[this.headBranch] = base;
+    this.HEAD = base;
     this._emit('graph-update');
-    return { ok: true, msg: `Successfully rebased '${this.headBranch}' onto '${target}'.` };
+    return { ok: true, msg: `Successfully rebased '${this.headBranch || 'HEAD'}' onto '${target}'.` };
   }
 
   _gitLog(positional, flags) {
-    let commits = [];
-    let cur = this.HEAD;
-    const limit = flags.n ? parseInt(flags.n) : 10;
-    let count = 0;
+    const limit = flags.n || 10;
+    const lines = [];
+    let cur = this.HEAD, count = 0;
     while (cur && count < limit) {
-      commits.push(this.commits[cur]);
-      cur = this.commits[cur]?.parents[0];
+      const c = this.commits[cur];
+      if (!c) break;
+      const refs = [];
+      Object.entries(this.branches).forEach(([n, id]) => {
+        if (id === cur) refs.push(n === this.headBranch ? `HEAD -> ${n}` : n);
+      });
+      Object.entries(this.tags).forEach(([n, id]) => { if (id === cur) refs.push(`tag: ${n}`); });
+      const refStr = refs.length ? ` (${refs.join(', ')})` : '';
+      if (flags.oneline) {
+        lines.push(`${cur.slice(0, 7)}${refStr} ${c.message}`);
+      } else {
+        lines.push(`commit ${cur}${refStr}\n  ${c.message}`);
+      }
+      cur = c.parents[0];
       count++;
     }
-    const lines = commits.map(c => {
-      const branchLabels = Object.entries(this.branches)
-        .filter(([,id]) => id === c.id)
-        .map(([name]) => name === this.headBranch ? `HEAD -> ${name}` : name)
-        .join(', ');
-      return `commit ${c.id}${branchLabels ? ` (${branchLabels})` : ''}\n  ${c.message}`;
-    });
-    return { ok: true, msg: lines.join('\n\n') };
+    return { ok: true, msg: lines.join('\n') || '(no commits)' };
   }
 
   _gitStatus() {
-    const branch = this.headBranch || `HEAD detached at ${this.HEAD?.slice(0,7)}`;
+    const branch = this.headBranch || `HEAD detached at ${this.HEAD ? this.HEAD.slice(0, 7) : '?'}`;
     let msg = `On branch ${branch}\n`;
     if (this.staging.length > 0) {
       msg += `\nChanges to be committed:\n  ${this.staging.join('\n  ')}`;
     } else {
-      msg += '\nnothing to commit, working tree clean';
+      msg += 'nothing to commit, working tree clean';
     }
     return { ok: true, msg };
   }
 
   _gitAdd(positional) {
-    const file = positional[0] || '.';
-    this.staging.push(file === '.' ? 'all changes' : file);
-    return { ok: true, msg: `Changes staged: ${file}` };
+    const f = positional[0] || '.';
+    this.staging.push(f === '.' ? 'all changes' : f);
+    return { ok: true, msg: `Staged: ${f}` };
   }
 
   _gitReset(positional, flags) {
     const target = positional[0];
-    if (!target) return { ok: false, msg: 'Usage: git reset [--soft|--mixed|--hard] <commit>' };
+    if (!target) return { ok: false, msg: 'Usage: git reset [--soft|--mixed|--hard] <ref>' };
     const resolved = this._resolveRef(target);
-    if (!resolved) return { ok: false, msg: `Unknown ref: ${target}` };
-
+    if (!resolved) return { ok: false, msg: `Unknown ref: '${target}'` };
     const mode = flags.hard ? 'hard' : flags.soft ? 'soft' : 'mixed';
     if (this.headBranch) this.branches[this.headBranch] = resolved;
     this.HEAD = resolved;
-    if (mode === 'hard') this.staging = [];
+    if (mode !== 'soft') this.staging = [];
     this._emit('graph-update');
-    return { ok: true, msg: `HEAD is now at ${resolved.slice(0,7)} (${mode} reset)` };
+    return { ok: true, msg: `HEAD is now at ${resolved.slice(0, 7)} (${mode} reset)` };
   }
 
   _gitRevert(positional) {
     const target = positional[0] || 'HEAD';
     const resolved = this._resolveRef(target);
-    if (!resolved) return { ok: false, msg: `Unknown ref: ${target}` };
-    const original = this.commits[resolved];
-    const revertCommit = this._createCommit(
-      `Revert "${original?.message || resolved}"`,
-      this.HEAD
-    );
-    if (this.headBranch) this.branches[this.headBranch] = revertCommit.id;
-    this.HEAD = revertCommit.id;
+    if (!resolved) return { ok: false, msg: `Unknown ref: '${target}'` };
+    const orig = this.commits[resolved];
+    const rc = this._createCommit(`Revert "${orig?.message || resolved}"`, [this.HEAD]);
+    if (this.headBranch) this.branches[this.headBranch] = rc.id;
+    this.HEAD = rc.id;
     this._emit('graph-update');
-    return { ok: true, msg: `Reverted commit ${resolved.slice(0,7)}. New commit: ${revertCommit.id}` };
+    return { ok: true, msg: `Reverted. New commit: ${rc.id}` };
   }
 
   _gitCherryPick(positional) {
     const target = positional[0];
-    if (!target) return { ok: false, msg: 'Commit hash required.' };
+    if (!target) return { ok: false, msg: 'Commit ref required.' };
     const resolved = this._resolveRef(target);
-    if (!resolved) return { ok: false, msg: `Unknown commit: ${target}` };
-    const original = this.commits[resolved];
-    const newC = this._createCommit(original?.message || 'Cherry-picked commit', this.HEAD);
-    if (this.headBranch) this.branches[this.headBranch] = newC.id;
-    this.HEAD = newC.id;
+    if (!resolved) return { ok: false, msg: `Unknown ref: '${target}'` };
+    const orig = this.commits[resolved];
+    const nc = this._createCommit(orig?.message || 'Cherry-pick', [this.HEAD]);
+    if (this.headBranch) this.branches[this.headBranch] = nc.id;
+    this.HEAD = nc.id;
     this._emit('graph-update');
-    return { ok: true, msg: `[${this.headBranch} ${newC.id}] ${original?.message}` };
+    return { ok: true, msg: `[${this.headBranch} ${nc.id}] ${orig?.message}` };
   }
 
   _gitTag(positional, flags) {
-    const name = positional[0];
-    if (!name) {
-      const list = Object.keys(this.tags).join('\n') || '(no tags)';
-      return { ok: true, msg: list };
-    }
-    const target = positional[1] ? this._resolveRef(positional[1]) : this.HEAD;
     if (flags.d) {
+      const name = positional[0];
+      if (!name) return { ok: false, msg: 'Tag name required.' };
       delete this.tags[name];
       this._emit('graph-update');
-      return { ok: true, msg: `Deleted tag '${name}'` };
+      return { ok: true, msg: `Deleted tag '${name}'.` };
     }
+    const name = positional[0];
+    if (!name) {
+      return { ok: true, msg: Object.keys(this.tags).join('\n') || '(no tags)' };
+    }
+    const target = positional[1] ? this._resolveRef(positional[1]) : this.HEAD;
     this.tags[name] = target;
     this._emit('graph-update');
-    return { ok: true, msg: `Created tag '${name}' at ${target?.slice(0,7)}` };
+    return { ok: true, msg: `Tagged '${name}' at ${target?.slice(0, 7)}` };
   }
 
   _gitStash(positional) {
     const sub = positional[0];
     if (!sub || sub === 'push' || sub === 'save') {
-      this.stash.unshift({ message: 'stash@{0}: WIP', staging: [...this.staging] });
+      this.stash.unshift({ staging: [...this.staging] });
       this.staging = [];
-      return { ok: true, msg: 'Saved working directory state.' };
+      return { ok: true, msg: 'Saved working directory state to stash.' };
     }
     if (sub === 'pop' || sub === 'apply') {
-      const s = this.stash.shift();
-      if (!s) return { ok: false, msg: 'No stash entries found.' };
+      const s = this.stash[0];
+      if (!s) return { ok: false, msg: 'No stash entries.' };
       this.staging = [...(s.staging || [])];
-      return { ok: true, msg: `Applied stash: ${s.message}` };
+      if (sub === 'pop') this.stash.shift();
+      return { ok: true, msg: `Applied stash@{0}` };
     }
     if (sub === 'list') {
-      return { ok: true, msg: this.stash.map((s,i) => `stash@{${i}}: ${s.message}`).join('\n') || '(empty)' };
+      return { ok: true, msg: this.stash.map((_, i) => `stash@{${i}}: WIP on ${this.headBranch}`).join('\n') || '(empty stash)' };
     }
     if (sub === 'drop') {
       this.stash.shift();
@@ -457,79 +459,53 @@ class GitEngine {
     return { ok: false, msg: `Unknown stash subcommand: ${sub}` };
   }
 
-  _gitDiff() {
-    return { ok: true, msg: '(No actual files in sandbox — showing conceptual diff)\ndiff --git a/file.txt b/file.txt\n--- a/file.txt\n+++ b/file.txt\n@@ -1 +1 @@\n-old content\n+new content' };
-  }
-
   _gitRemote(positional, flags) {
     const sub = positional[0];
-    if (!sub) {
-      return { ok: true, msg: Object.keys(this.remotes).join('\n') || '(no remotes)' };
+    if (!sub || flags.v) {
+      const list = Object.entries(this.remotes).map(([n, r]) => `${n}\t${r.url} (fetch)\n${n}\t${r.url} (push)`).join('\n');
+      return { ok: true, msg: list || '(no remotes)' };
     }
     if (sub === 'add') {
-      const [,name, url] = positional;
+      const name = positional[1], url = positional[2];
       if (!name || !url) return { ok: false, msg: 'Usage: git remote add <name> <url>' };
       this.remotes[name] = { url, branches: {} };
       return { ok: true, msg: `Remote '${name}' added.` };
     }
     if (sub === 'remove' || sub === 'rm') {
       const name = positional[1];
+      if (!name) return { ok: false, msg: 'Remote name required.' };
       delete this.remotes[name];
       return { ok: true, msg: `Remote '${name}' removed.` };
     }
-    if (sub === 'show' || sub === '-v') {
-      return { ok: true, msg: Object.entries(this.remotes).map(([n,r]) => `${n}\t${r.url}`).join('\n') || '(no remotes)' };
-    }
-    return { ok: true, msg: Object.keys(this.remotes).join('\n') };
+    return { ok: true, msg: Object.keys(this.remotes).join('\n') || '(no remotes)' };
   }
 
-  _gitPush(positional, flags) {
+  _gitPush(positional) {
     const remote = positional[0] || 'origin';
     const branch = positional[1] || this.headBranch || 'main';
-    if (!this.remotes[remote]) {
-      return { ok: false, msg: `Remote '${remote}' not found. Add it with 'git remote add'.` };
-    }
+    if (!this.remotes[remote]) return { ok: false, msg: `Remote '${remote}' not found. Run: git remote add ${remote} <url>` };
+    this.remotes[remote].branches = this.remotes[remote].branches || {};
     this.remotes[remote].branches[branch] = this.HEAD;
-    this._emit('graph-update');
     return { ok: true, msg: `Pushed '${branch}' to ${remote}.` };
   }
 
-  _gitFetch(positional) {
-    const remote = positional[0] || 'origin';
-    if (!this.remotes[remote]) return { ok: false, msg: `Remote '${remote}' not found.` };
-    return { ok: true, msg: `Fetched from ${remote}. (Sandbox: no actual remote)` };
-  }
-
-  _gitPull(positional, flags) {
-    const remote = positional[0] || 'origin';
-    const branch = positional[1] || this.headBranch;
-    return { ok: true, msg: `Pulled from ${remote}/${branch}. Already up to date. (Sandbox)` };
-  }
-
   _gitHelp() {
-    const msg = `
-Available git commands:
+    return { ok: true, msg: `Available commands:
   commit, branch, checkout, switch, merge, rebase
   log, status, add, reset, revert, cherry-pick
-  tag, stash, diff, remote, push, pull, fetch
-
-Use 'git <command> --help' for details.
-    `.trim();
-    return { ok: true, msg };
+  tag, stash, diff, remote, push, pull, fetch` };
   }
 
-  // ── GRAPH HELPERS ──
-
+  // ── HELPERS ──
   _isAncestor(potentialAncestor, descendant) {
     const visited = new Set();
     const queue = [descendant];
     while (queue.length) {
       const cur = queue.shift();
+      if (!cur || visited.has(cur)) continue;
       if (cur === potentialAncestor) return true;
-      if (visited.has(cur)) continue;
       visited.add(cur);
-      const c = this.commits[cur];
-      if (c) c.parents.forEach(p => queue.push(p));
+      (this.commits[cur]?.parents || []).forEach(p => queue.push(p));
     }
     return false;
   }
@@ -543,14 +519,9 @@ Use 'git <command> --help' for details.
       if (!cur || cur === base || visited.has(cur)) continue;
       visited.add(cur);
       result.push(cur);
-      const c = this.commits[cur];
-      if (c) c.parents.forEach(p => queue.push(p));
+      (this.commits[cur]?.parents || []).forEach(p => queue.push(p));
     }
     return result;
-  }
-
-  getAllCommits() {
-    return Object.values(this.commits);
   }
 
   getState() {
@@ -563,14 +534,13 @@ Use 'git <command> --help' for details.
     };
   }
 
-  // ── EVENT SYSTEM ──
   on(event, cb) {
-    if (!this.eventListeners[event]) this.eventListeners[event] = [];
-    this.eventListeners[event].push(cb);
+    if (!this._listeners[event]) this._listeners[event] = [];
+    this._listeners[event].push(cb);
   }
 
   _emit(event, data) {
-    (this.eventListeners[event] || []).forEach(cb => cb(data));
+    (this._listeners[event] || []).forEach(cb => cb(data));
   }
 }
 

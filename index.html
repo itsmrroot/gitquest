@@ -4,8 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GitQuest — Master Git from Beginner to Wizard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2339d353'/><text y='24' x='4' font-size='22'>⎇</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2339d353'/><text y='24' x='4' font-size='20' fill='black'>⎇</text></svg>" />
 </head>
 <body>
 
@@ -17,12 +20,10 @@
       <div class="logo-icon">⎇</div>
       <div class="logo-text">Git<span>Quest</span></div>
     </div>
-
     <div class="header-center">
       <button class="tab-btn active" data-mode="learn">📚 Learn</button>
       <button class="tab-btn" data-mode="sandbox">🏖️ Sandbox</button>
     </div>
-
     <div class="header-right">
       <div class="xp-badge">⚡ <span id="xp-count">0 XP</span></div>
       <div class="level-badge" id="level-badge">Rookie</div>
@@ -31,19 +32,19 @@
 
   <!-- ── LEFT SIDEBAR ── -->
   <aside id="sidebar">
-    <div style="padding:12px 16px 8px;border-bottom:1px solid var(--border)">
+    <div style="padding:12px 16px 8px;border-bottom:1px solid var(--border);flex-shrink:0">
       <div class="sidebar-title">Challenges</div>
     </div>
-    <div id="challenge-list"></div>
+    <div id="challenge-list" style="overflow-y:auto;flex:1"></div>
   </aside>
 
-  <!-- ── MAIN AREA ── -->
+  <!-- ── MAIN ── -->
   <main id="main">
 
-    <!-- Graph -->
+    <!-- Graph area -->
     <div id="graph-area">
       <svg id="git-canvas" xmlns="http://www.w3.org/2000/svg"></svg>
-      <div class="canvas-hint">Drag to pan · Hover nodes for details</div>
+      <div class="canvas-hint">Drag to pan · Hover commits for details</div>
       <div class="node-tooltip" id="node-tooltip"></div>
       <div id="autocomplete"></div>
     </div>
@@ -56,22 +57,20 @@
           <div class="terminal-dot yellow"></div>
           <div class="terminal-dot green"></div>
         </div>
-        <div class="terminal-title">bash — gitquest sandbox</div>
+        <div class="terminal-title">bash — gitquest</div>
         <div class="terminal-actions">
           <button class="terminal-btn" id="btn-clear">clear</button>
           <button class="terminal-btn" id="btn-reset">⟳ reset</button>
         </div>
       </div>
-
       <div id="terminal-output"></div>
-
       <div class="terminal-input-row">
         <span class="prompt-label" id="prompt-branch">main</span>
         <span class="prompt-label" style="color:var(--text-muted)"> $ </span>
         <input
           type="text"
           id="cmd-input"
-          placeholder="git commit -m &quot;My first commit&quot;"
+          placeholder='git commit -m "My first commit"'
           autocomplete="off"
           spellcheck="false"
         />
@@ -88,100 +87,91 @@
       <div class="panel-tab" data-tab="ai-chat">AI Tutor</div>
     </div>
 
-    <!-- Mission Tab -->
+    <!-- Mission -->
     <div class="panel-content active" id="mission-content">
       <div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:40px">
-        Select a challenge to begin!
+        Loading challenge...
       </div>
     </div>
 
-    <!-- Cheatsheet Tab -->
+    <!-- Cheatsheet -->
     <div class="panel-content" id="cheatsheet-content">
       <div class="cheat-group">
         <div class="cheat-group-title">📸 Saving Work</div>
         <div class="cheat-item"><span class="cheat-cmd">git add .</span><span class="cheat-desc">Stage all changes</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git commit -m ""</span><span class="cheat-desc">Commit with message</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git commit -m "msg"</span><span class="cheat-desc">Commit with message</span></div>
         <div class="cheat-item"><span class="cheat-cmd">git commit --amend</span><span class="cheat-desc">Edit last commit</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git stash</span><span class="cheat-desc">Stash current changes</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git stash pop</span><span class="cheat-desc">Apply + remove stash</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git stash</span><span class="cheat-desc">Stash changes</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git stash pop</span><span class="cheat-desc">Apply stash</span></div>
       </div>
       <div class="cheat-group">
         <div class="cheat-group-title">🌿 Branching</div>
         <div class="cheat-item"><span class="cheat-cmd">git branch</span><span class="cheat-desc">List branches</span></div>
         <div class="cheat-item"><span class="cheat-cmd">git branch &lt;name&gt;</span><span class="cheat-desc">Create branch</span></div>
         <div class="cheat-item"><span class="cheat-cmd">git checkout -b &lt;name&gt;</span><span class="cheat-desc">Create + switch</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git switch &lt;name&gt;</span><span class="cheat-desc">Switch branch (modern)</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git switch &lt;name&gt;</span><span class="cheat-desc">Switch (modern)</span></div>
         <div class="cheat-item"><span class="cheat-cmd">git branch -d &lt;name&gt;</span><span class="cheat-desc">Delete branch</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git branch -m &lt;old&gt; &lt;new&gt;</span><span class="cheat-desc">Rename branch</span></div>
       </div>
       <div class="cheat-group">
         <div class="cheat-group-title">🔀 Merging & Rebasing</div>
-        <div class="cheat-item"><span class="cheat-cmd">git merge &lt;branch&gt;</span><span class="cheat-desc">Merge branch into current</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git merge &lt;branch&gt;</span><span class="cheat-desc">Merge branch</span></div>
         <div class="cheat-item"><span class="cheat-cmd">git merge --no-ff</span><span class="cheat-desc">Force merge commit</span></div>
         <div class="cheat-item"><span class="cheat-cmd">git rebase &lt;branch&gt;</span><span class="cheat-desc">Rebase onto branch</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git cherry-pick &lt;hash&gt;</span><span class="cheat-desc">Apply specific commit</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git cherry-pick &lt;hash&gt;</span><span class="cheat-desc">Apply one commit</span></div>
       </div>
       <div class="cheat-group">
         <div class="cheat-group-title">⏪ Undoing</div>
-        <div class="cheat-item"><span class="cheat-cmd">git revert HEAD</span><span class="cheat-desc">Safe: new undo commit</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git reset --soft HEAD~1</span><span class="cheat-desc">Undo commit, keep staged</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git reset --mixed HEAD~1</span><span class="cheat-desc">Undo commit, unstage</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git revert HEAD</span><span class="cheat-desc">Safe undo (new commit)</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git reset --soft HEAD~1</span><span class="cheat-desc">Undo, keep staged</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git reset --mixed HEAD~1</span><span class="cheat-desc">Undo, unstage</span></div>
         <div class="cheat-item"><span class="cheat-cmd">git reset --hard HEAD~1</span><span class="cheat-desc">⚠️ Delete commit + changes</span></div>
       </div>
       <div class="cheat-group">
         <div class="cheat-group-title">🔍 Inspecting</div>
         <div class="cheat-item"><span class="cheat-cmd">git log</span><span class="cheat-desc">Commit history</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git log --oneline</span><span class="cheat-desc">Compact log</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git log --oneline</span><span class="cheat-desc">Compact history</span></div>
         <div class="cheat-item"><span class="cheat-cmd">git status</span><span class="cheat-desc">Working tree status</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git diff</span><span class="cheat-desc">Show changes</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git tag &lt;name&gt;</span><span class="cheat-desc">Create tag</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git tag &lt;name&gt;</span><span class="cheat-desc">Create tag at HEAD</span></div>
       </div>
       <div class="cheat-group">
         <div class="cheat-group-title">🌐 Remotes</div>
         <div class="cheat-item"><span class="cheat-cmd">git remote add origin &lt;url&gt;</span><span class="cheat-desc">Add remote</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git push origin main</span><span class="cheat-desc">Push to remote</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git pull</span><span class="cheat-desc">Fetch + merge remote</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git fetch</span><span class="cheat-desc">Download remote changes</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git push origin main</span><span class="cheat-desc">Push branch</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git pull</span><span class="cheat-desc">Fetch + merge</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git fetch</span><span class="cheat-desc">Download changes</span></div>
       </div>
     </div>
 
-    <!-- AI Chat Tab -->
+    <!-- AI Chat -->
     <div class="panel-content" id="ai-chat-content">
-      <div style="margin-bottom:12px;font-size:12px;color:var(--text-muted);line-height:1.5;">
-        Ask anything about Git — from basics to advanced workflows. The AI tutor knows your current challenge and repo state.
-      </div>
+      <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:12px">
+        Ask anything about Git. The AI tutor knows your current challenge and repo state.
+      </p>
       <div class="ai-chat-msgs" id="ai-chat-messages"></div>
       <div class="ai-input-row">
-        <textarea
-          class="ai-input"
-          id="ai-input"
-          placeholder="Ask anything about Git..."
-          rows="2"
-        ></textarea>
+        <textarea class="ai-input" id="ai-input" placeholder="Ask anything about Git..." rows="2"></textarea>
         <button class="ai-send-btn" id="ai-send">Ask</button>
       </div>
-
-      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Quick questions</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <button class="hint-btn" style="text-align:left" onclick="document.getElementById('ai-input').value='What is the difference between merge and rebase?'">What is merge vs rebase?</button>
-          <button class="hint-btn" style="text-align:left" onclick="document.getElementById('ai-input').value='When should I use git reset vs git revert?'">reset vs revert?</button>
-          <button class="hint-btn" style="text-align:left" onclick="document.getElementById('ai-input').value='Explain detached HEAD state'">Explain detached HEAD</button>
-          <button class="hint-btn" style="text-align:left" onclick="document.getElementById('ai-input').value='What is the best branching strategy for a team?'">Best branching strategy?</button>
-        </div>
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Quick questions</div>
+        <button class="hint-btn quick-q" data-q="What is the difference between git merge and git rebase?">merge vs rebase?</button>
+        <button class="hint-btn quick-q" data-q="When should I use git reset vs git revert?">reset vs revert?</button>
+        <button class="hint-btn quick-q" data-q="What is detached HEAD state and how do I fix it?">Detached HEAD?</button>
+        <button class="hint-btn quick-q" data-q="What is the best Git branching strategy for a small team?">Best branching strategy?</button>
       </div>
     </div>
+
   </aside>
 
 </div>
 
-<!-- ── SUCCESS OVERLAY ── -->
+<!-- Success overlay -->
 <div id="success-overlay">
   <div class="success-card">
     <div class="success-icon">🎉</div>
     <div class="success-title">Challenge Complete!</div>
-    <div class="success-sub">You mastered this challenge</div>
-    <div class="xp-earned">+100 XP</div>
+    <div class="success-sub"></div>
+    <div class="xp-earned"></div>
     <div>
       <button class="next-btn">Next Challenge →</button>
       <button class="retry-btn">Keep Exploring</button>
@@ -189,20 +179,11 @@
   </div>
 </div>
 
+<!-- Scripts — ORDER MATTERS: engine → renderer → challenges → app -->
 <script src="js/git-engine.js"></script>
 <script src="js/graph-renderer.js"></script>
 <script src="js/challenges.js"></script>
 <script src="js/app.js"></script>
-
-<!-- Live branch name in prompt -->
-<script>
-  setInterval(() => {
-    if (window.app?.engine) {
-      const b = app.engine.headBranch || '(detached)';
-      document.getElementById('prompt-branch').textContent = b;
-    }
-  }, 300);
-</script>
 
 </body>
 </html>
