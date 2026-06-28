@@ -186,7 +186,7 @@ class GitEngine {
       const c = this.commits[this.HEAD];
       if (!c) return { ok: false, msg: 'Nothing to amend.' };
       const newId = this._genId();
-      const amended = { ...c, id: newId, message };
+      const amended = { ...c, id: newId, message: flags.m || c.message };
       this.commits[newId] = amended;
       delete this.commits[this.HEAD];
       if (this.headBranch) this.branches[this.headBranch] = newId;
@@ -214,20 +214,26 @@ class GitEngine {
       this._emit('graph-update');
       return { ok: true, msg: `Deleted branch ${name}.` };
     }
-    // Rename
-    if (flags.m) {
-      // -m was captured as flags.m (the value), but here it means rename flag
-      // Actually our tokenizer captures -m <value> so this doesn't apply
-      // Handle: git branch -m oldname newname (both positional)
-      if (positional.length >= 2) {
-        const [old, neu] = positional;
-        if (!this.branches[old]) return { ok: false, msg: `Branch '${old}' not found.` };
-        this.branches[neu] = this.branches[old];
-        delete this.branches[old];
-        if (this.headBranch === old) this.headBranch = neu;
-        this._emit('graph-update');
-        return { ok: true, msg: `Renamed branch '${old}' to '${neu}'.` };
+    // Rename: git branch -m [<old>] <new>
+    // Tokenizer consumes the token after -m as flags.m, so:
+    //   "git branch -m old new" → flags.m='old', positional=['new']
+    //   "git branch -m new"     → flags.m='new', positional=[]  (rename current)
+    if ('m' in flags) {
+      let old, neu;
+      if (positional.length >= 1) {
+        old = flags.m || this.headBranch;
+        neu = positional[0];
+      } else {
+        old = this.headBranch;
+        neu = flags.m;
       }
+      if (!neu) return { ok: false, msg: 'New branch name required.' };
+      if (!this.branches[old]) return { ok: false, msg: `Branch '${old}' not found.` };
+      this.branches[neu] = this.branches[old];
+      delete this.branches[old];
+      if (this.headBranch === old) this.headBranch = neu;
+      this._emit('graph-update');
+      return { ok: true, msg: `Renamed branch '${old}' to '${neu}'.` };
     }
     // Create
     if (positional.length > 0) {

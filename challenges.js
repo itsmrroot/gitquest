@@ -66,10 +66,18 @@ const TIERS = [
         setup: ['git commit -m "Setup"', 'git checkout -b feature'],
         goals: [
           {
-            id: 'g1', text: 'Make 2 commits on feature branch', check: (s, h, initialCount) => {
-              const featureTip = s.branches['feature'];
-              // Count commits reachable from feature but not main
-              return featureTip !== s.branches['main'];
+            id: 'g1', text: 'Make 2 commits on feature branch', check: (s, h) => {
+              // Walk from feature tip back to the main tip, count commits in between
+              const mainTip = s.branches['main'];
+              let cur = s.branches['feature'];
+              let count = 0;
+              const visited = new Set();
+              while (cur && cur !== mainTip && !visited.has(cur)) {
+                visited.add(cur);
+                count++;
+                cur = s.commits[cur]?.parents[0] || null;
+              }
+              return count >= 2;
             }
           }
         ],

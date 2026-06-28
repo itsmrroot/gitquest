@@ -298,7 +298,11 @@ Give a helpful 3-sentence explanation in ${langName}. Use backtick code formatti
     try {
       const resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6', max_tokens: 1000,
           messages: [{ role: 'user', content: prompt }]
@@ -428,7 +432,7 @@ Give a helpful 3-sentence explanation in ${langName}. Use backtick code formatti
       const chk = document.getElementById(`check-${goal.id}`);
       if (chk) {
         if (passed) { chk.classList.add('done'); chk.textContent = '✓'; }
-        else allDone = false;
+        else { chk.classList.remove('done'); chk.textContent = ''; allDone = false; }
       } else if (!passed) allDone = false;
     });
 
@@ -638,7 +642,11 @@ Be concise (2-4 sentences), use \`code\` backtick formatting, be encouraging and
     try {
       const resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6', max_tokens: 1000,
           system: sys,
