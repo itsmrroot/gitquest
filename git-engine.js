@@ -91,32 +91,32 @@ class GitEngine {
 
     try {
       switch (sub) {
-        case 'init':        return this._gitInit();
-        case 'commit':      return this._gitCommit(positional, flags);
-        case 'branch':      return this._gitBranch(positional, flags);
-        case 'checkout':    return this._gitCheckout(positional, flags);
-        case 'switch':      return this._gitSwitch(positional, flags);
-        case 'merge':       return this._gitMerge(positional, flags);
-        case 'rebase':      return this._gitRebase(positional, flags);
-        case 'log':         return this._gitLog(positional, flags);
-        case 'status':      return this._gitStatus();
-        case 'add':         return this._gitAdd(positional);
-        case 'reset':       return this._gitReset(positional, flags);
-        case 'revert':      return this._gitRevert(positional);
+        case 'init': return this._gitInit();
+        case 'commit': return this._gitCommit(positional, flags);
+        case 'branch': return this._gitBranch(positional, flags);
+        case 'checkout': return this._gitCheckout(positional, flags);
+        case 'switch': return this._gitSwitch(positional, flags);
+        case 'merge': return this._gitMerge(positional, flags);
+        case 'rebase': return this._gitRebase(positional, flags);
+        case 'log': return this._gitLog(positional, flags);
+        case 'status': return this._gitStatus();
+        case 'add': return this._gitAdd(positional);
+        case 'reset': return this._gitReset(positional, flags);
+        case 'revert': return this._gitRevert(positional);
         case 'cherry-pick': return this._gitCherryPick(positional);
-        case 'tag':         return this._gitTag(positional, flags);
-        case 'stash':       return this._gitStash(positional);
-        case 'diff':        return { ok: true, msg: '(Sandbox: no real files)\ndiff --git a/file b/file\n--- a/file\n+++ b/file\n@@ -1 +1 @@\n-old\n+new' };
-        case 'remote':      return this._gitRemote(positional, flags);
-        case 'push':        return this._gitPush(positional);
-        case 'pull':        return { ok: true, msg: 'Already up to date. (Sandbox)' };
-        case 'fetch':       return { ok: true, msg: 'Fetched from remote. (Sandbox)' };
-        case 'clone':       return { ok: true, msg: 'Cloned into sandbox.' };
-        case 'help':        return this._gitHelp();
+        case 'tag': return this._gitTag(positional, flags);
+        case 'stash': return this._gitStash(positional);
+        case 'diff': return { ok: true, msg: '(Sandbox: no real files)\ndiff --git a/file b/file\n--- a/file\n+++ b/file\n@@ -1 +1 @@\n-old\n+new' };
+        case 'remote': return this._gitRemote(positional, flags);
+        case 'push': return this._gitPush(positional);
+        case 'pull': return { ok: true, msg: 'Already up to date. (Sandbox)' };
+        case 'fetch': return { ok: true, msg: 'Fetched from remote. (Sandbox)' };
+        case 'clone': return { ok: true, msg: 'Cloned into sandbox.' };
+        case 'help': return this._gitHelp();
         default:
           return { ok: false, msg: `git: '${sub}' is not a git command. Try 'git help'.` };
       }
-    } catch(e) {
+    } catch (e) {
       return { ok: false, msg: `Fatal: ${e.message}` };
     }
   }
@@ -490,7 +490,8 @@ class GitEngine {
   }
 
   _gitHelp() {
-    return { ok: true, msg: `Available commands:
+    return {
+      ok: true, msg: `Available commands:
   commit, branch, checkout, switch, merge, rebase
   log, status, add, reset, revert, cherry-pick
   tag, stash, diff, remote, push, pull, fetch` };

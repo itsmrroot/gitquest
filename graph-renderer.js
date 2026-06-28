@@ -36,7 +36,7 @@ class GraphRenderer {
     if (/^release/.test(name)) return '#f0883e';
     if (/^develop|^dev$/.test(name)) return '#58a6ff';
     // Stable palette by hash
-    const pal = ['#58a6ff','#bc8cff','#f0883e','#e3b341','#f85149'];
+    const pal = ['#58a6ff', '#bc8cff', '#f0883e', '#e3b341', '#f85149'];
     let h = 0;
     for (const c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffff;
     return pal[h % pal.length];
@@ -156,7 +156,7 @@ class GraphRenderer {
       if (isMerge) {
         nodeEl = document.createElementNS(ns, 'polygon');
         const r = 9;
-        nodeEl.setAttribute('points', `${p.x},${p.y-r} ${p.x+r},${p.y} ${p.x},${p.y+r} ${p.x-r},${p.y}`);
+        nodeEl.setAttribute('points', `${p.x},${p.y - r} ${p.x + r},${p.y} ${p.x},${p.y + r} ${p.x - r},${p.y}`);
       } else {
         nodeEl = document.createElementNS(ns, 'circle');
         nodeEl.setAttribute('cx', p.x); nodeEl.setAttribute('cy', p.y);
@@ -172,7 +172,7 @@ class GraphRenderer {
       nodeEl.addEventListener('mouseenter', e => {
         if (this.tooltip) {
           this.tooltip.style.display = 'block';
-          this.tooltip.textContent = `${cid.slice(0,7)}: ${msg}`;
+          this.tooltip.textContent = `${cid.slice(0, 7)}: ${msg}`;
           this.tooltip.style.left = (e.clientX + 14) + 'px';
           this.tooltip.style.top = (e.clientY - 36) + 'px';
         }
@@ -210,7 +210,7 @@ class GraphRenderer {
       const w = labelText.length * charW + 14;
 
       const rect = document.createElementNS(ns, 'rect');
-      rect.setAttribute('x', p.x - w/2); rect.setAttribute('y', labelY - 9);
+      rect.setAttribute('x', p.x - w / 2); rect.setAttribute('y', labelY - 9);
       rect.setAttribute('width', w); rect.setAttribute('height', 14);
       rect.setAttribute('rx', '3');
       rect.setAttribute('fill', isActive ? color : 'transparent');

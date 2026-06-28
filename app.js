@@ -1,6 +1,6 @@
 // =============================================
 // GitQuest — js/app.js
-// Main application controller
+// Main application controller (with i18n + theme)
 // =============================================
 
 class GitQuestApp {
@@ -21,7 +21,9 @@ class GitQuestApp {
   }
 
   init() {
-    // Renderer
+    this._initTheme();
+    this._initLang();
+
     const svg = document.getElementById('git-canvas');
     if (svg) {
       this.renderer = new GraphRenderer(svg, this.engine);
@@ -32,8 +34,8 @@ class GitQuestApp {
     this._buildSidebar();
     this._bindEvents();
     this._updateXP();
+    this._applyI18n();
 
-    // Load first challenge
     if (TIERS && TIERS.length && TIERS[0].challenges.length) {
       this._loadChallenge(TIERS[0], TIERS[0].challenges[0]);
     }
@@ -43,7 +45,115 @@ class GitQuestApp {
     this._focusInput();
   }
 
-  // ── SIDEBAR ──
+  // ══════════════════════════════════════
+  // THEME
+  // ══════════════════════════════════════
+  _initTheme() {
+    const saved = localStorage.getItem('gq_theme') || 'dark';
+    this._setTheme(saved, false);
+    document.getElementById('theme-toggle')?.addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme');
+      this._setTheme(cur === 'dark' ? 'light' : 'dark', true);
+    });
+  }
+
+  _setTheme(theme, rerender) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('gq_theme', theme);
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    if (rerender) this.renderer?.render();
+  }
+
+  // ══════════════════════════════════════
+  // LANGUAGE
+  // ══════════════════════════════════════
+  _initLang() {
+    const dropdown = document.getElementById('lang-dropdown');
+    if (!dropdown) return;
+
+    const currentCode = localStorage.getItem('gq_lang') || 'en';
+    dropdown.innerHTML = '';
+
+    Object.entries(LANGUAGES).forEach(([code, lang]) => {
+      const opt = document.createElement('div');
+      opt.className = 'lang-option' + (code === currentCode ? ' active' : '');
+      opt.innerHTML = `<span class="lang-flag">${lang.flag}</span><span>${lang.name}</span>`;
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._setLang(code);
+        document.getElementById('lang-picker')?.classList.remove('open');
+      });
+      dropdown.appendChild(opt);
+    });
+
+    this._updateLangBtn(currentCode);
+    document.documentElement.dir = (LANGUAGES[currentCode]?.dir) || 'ltr';
+    document.documentElement.lang = currentCode;
+
+    document.getElementById('lang-current-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('lang-picker')?.classList.toggle('open');
+    });
+    document.addEventListener('click', () => {
+      document.getElementById('lang-picker')?.classList.remove('open');
+    });
+  }
+
+  _setLang(code) {
+    localStorage.setItem('gq_lang', code);
+    this._updateLangBtn(code);
+    document.documentElement.dir = (LANGUAGES[code]?.dir) || 'ltr';
+    document.documentElement.lang = code;
+
+    document.querySelectorAll('.lang-option').forEach((opt, i) => {
+      opt.classList.toggle('active', Object.keys(LANGUAGES)[i] === code);
+    });
+
+    this._applyI18n();
+
+    if (this.currentChallenge) {
+      this._renderMission(this.currentChallenge);
+    } else if (this.mode === 'sandbox') {
+      this._renderSandboxPanel();
+    }
+  }
+
+  _updateLangBtn(code) {
+    const lang = LANGUAGES[code] || LANGUAGES.en;
+    const flag = document.getElementById('lang-flag');
+    const name = document.getElementById('lang-name');
+    if (flag) flag.textContent = lang.flag;
+    if (name) name.textContent = code.toUpperCase();
+  }
+
+  _applyI18n() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      const val = t(key);
+      if (val) el.textContent = val;
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      const val = t(key);
+      if (val) el.placeholder = val;
+    });
+    // Quick question buttons
+    document.querySelectorAll('.quick-q').forEach(btn => {
+      const qi = btn.getAttribute('data-qi');
+      const qf = btn.getAttribute('data-qf');
+      if (qi) btn.textContent = t(qi);
+      btn.onclick = () => {
+        const inp = document.getElementById('ai-input');
+        if (inp) inp.value = t(qf);
+        this._sendChat();
+      };
+    });
+  }
+
+  // ══════════════════════════════════════
+  // SIDEBAR
+  // ══════════════════════════════════════
   _buildSidebar() {
     const el = document.getElementById('challenge-list');
     if (!el) return;
@@ -87,10 +197,7 @@ class GitQuestApp {
           </div>
           <div class="challenge-xp">+${ch.xp}XP</div>
         `;
-
-        if (!isLocked) {
-          item.addEventListener('click', () => this._loadChallenge(tier, ch));
-        }
+        if (!isLocked) item.addEventListener('click', () => this._loadChallenge(tier, ch));
         list.appendChild(item);
       });
 
@@ -98,14 +205,15 @@ class GitQuestApp {
     });
   }
 
-  // ── CHALLENGE LOADING ──
+  // ══════════════════════════════════════
+  // CHALLENGE
+  // ══════════════════════════════════════
   _loadChallenge(tier, challenge) {
     this.currentChallenge = challenge;
     this.currentTier = tier;
     this.cmdsThisChallenge = [];
     this.hintIdx = 0;
 
-    // Reset engine and run setup
     this.engine.reset();
     this.setupCommitCount = 0;
     for (const cmd of (challenge.setup || [])) {
@@ -113,13 +221,12 @@ class GitQuestApp {
       this.setupCommitCount++;
     }
     this.renderer?.render();
-
     this._buildSidebar();
     this._renderMission(challenge);
 
     const out = document.getElementById('terminal-output');
     if (out) out.innerHTML = '';
-    this._log('info', `▶ Challenge: ${challenge.name}`);
+    this._log('info', `▶ ${challenge.name}`);
     this._focusInput();
   }
 
@@ -132,13 +239,17 @@ class GitQuestApp {
       hard: 'diff-hard', expert: 'diff-expert'
     }[ch.difficulty] || 'diff-beginner';
 
+    const hintLabel = t('showHint') || '💡 Show Hint';
+    const askLabel = t('askAI') || '✨ Ask AI Tutor';
+    const objLabel = t('objectives') || '🎯 Objectives';
+    const conceptLabel = t('concept') || 'Concept';
+
     panel.innerHTML = `
       <div class="mission-title">${ch.name}</div>
       <div class="mission-difficulty ${diffClass}">● ${ch.difficulty} · ${ch.xp} XP</div>
       <p class="mission-desc">${ch.description}</p>
-
       <div class="mission-goal">
-        <div class="mission-goal-title">🎯 Objectives</div>
+        <div class="mission-goal-title">${objLabel}</div>
         ${ch.goals.map(g => `
           <div class="goal-item" id="goal-${g.id}">
             <div class="goal-check" id="check-${g.id}"></div>
@@ -146,14 +257,15 @@ class GitQuestApp {
           </div>
         `).join('')}
       </div>
-
-      ${ch.concept ? `<div class="concept-box">💡 <strong>Concept:</strong> ${ch.concept}</div>` : ''}
-
-      <button class="hint-btn" onclick="window.app._showHint()">💡 Show Hint (${ch.hints?.length || 0} available)</button>
+      ${ch.concept ? `<div class="concept-box">💡 <strong>${conceptLabel}:</strong> ${ch.concept}</div>` : ''}
+      <button class="hint-btn" id="hint-btn-main">${hintLabel} (${ch.hints?.length || 0})</button>
       <div class="hint-box" id="hint-box"></div>
-      <button class="ask-ai-btn" onclick="window.app._askAI()">✨ Ask AI Tutor about this challenge</button>
+      <button class="ask-ai-btn" id="ask-ai-btn-main">${askLabel}</button>
       <div class="ai-response" id="mission-ai"></div>
     `;
+
+    document.getElementById('hint-btn-main')?.addEventListener('click', () => this._showHint());
+    document.getElementById('ask-ai-btn-main')?.addEventListener('click', () => this._askAI());
   }
 
   _showHint() {
@@ -172,36 +284,36 @@ class GitQuestApp {
     const box = document.getElementById('mission-ai');
     if (!box) return;
     box.style.display = 'block';
-    box.textContent = 'Thinking...';
+    box.textContent = t('thinkingMsg') || 'Thinking...';
 
     const state = this.engine.getState();
-    const prompt = `You are a Git expert tutor inside an interactive learning app.
+    const langName = window.currentLang().name;
+    const prompt = `You are a Git expert tutor inside GitQuest, an interactive learning app. Respond in ${langName}.
 Challenge: "${ch.name}" — ${ch.description}
 Goals: ${ch.goals.map(g => g.text).join('; ')}
-Student's recent commands: ${this.cmdsThisChallenge.slice(-5).join(', ') || 'none yet'}
-Current branches: ${Object.keys(state.branches).join(', ')}
-Current HEAD branch: ${state.headBranch || 'detached'}
-
-Give a helpful, specific 3-sentence explanation. Use backtick code formatting. End with one concrete command they should try.`;
+Student commands so far: ${this.cmdsThisChallenge.slice(-5).join(', ') || 'none'}
+Branches: ${Object.keys(state.branches).join(', ')} | HEAD: ${state.headBranch || 'detached'}
+Give a helpful 3-sentence explanation in ${langName}. Use backtick code formatting. End with one concrete command to try.`;
 
     try {
       const resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 1000,
+          model: 'claude-sonnet-4-6', max_tokens: 1000,
           messages: [{ role: 'user', content: prompt }]
         })
       });
       const data = await resp.json();
       box.textContent = data.content?.find(b => b.type === 'text')?.text || 'No response.';
-    } catch(e) {
-      box.textContent = 'AI unavailable right now.';
+    } catch (e) {
+      box.textContent = t('aiUnavailable') || 'AI unavailable.';
     }
   }
 
-  // ── EVENTS ──
+  // ══════════════════════════════════════
+  // EVENTS
+  // ══════════════════════════════════════
   _bindEvents() {
     const input = document.getElementById('cmd-input');
     if (!input) return;
@@ -220,8 +332,10 @@ Give a helpful, specific 3-sentence explanation. Use backtick code formatting. E
         }
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        if (this.histIdx > 0) { this.histIdx--; input.value = this.cmdHistory[this.cmdHistory.length - 1 - this.histIdx]; }
-        else { this.histIdx = -1; input.value = ''; }
+        if (this.histIdx > 0) {
+          this.histIdx--;
+          input.value = this.cmdHistory[this.cmdHistory.length - 1 - this.histIdx];
+        } else { this.histIdx = -1; input.value = ''; }
       } else if (e.key === 'Tab') {
         e.preventDefault();
         const first = document.querySelector('#autocomplete .ac-item');
@@ -246,11 +360,11 @@ Give a helpful, specific 3-sentence explanation. Use backtick code formatting. E
     // Panel tabs
     document.querySelectorAll('.panel-tab').forEach(tab => {
       tab.addEventListener('click', () => {
-        const t = tab.dataset.tab;
+        const target = tab.dataset.tab;
         document.querySelectorAll('.panel-tab').forEach(x => x.classList.remove('active'));
         document.querySelectorAll('.panel-content').forEach(x => x.classList.remove('active'));
         tab.classList.add('active');
-        document.getElementById(`${t}-content`)?.classList.add('active');
+        document.getElementById(`${target}-content`)?.classList.add('active');
       });
     });
 
@@ -261,25 +375,23 @@ Give a helpful, specific 3-sentence explanation. Use backtick code formatting. E
 
     document.getElementById('btn-reset')?.addEventListener('click', () => {
       if (this.currentChallenge) this._loadChallenge(this.currentTier, this.currentChallenge);
-      else { this.engine.reset(); this.renderer?.render(); document.getElementById('terminal-output').innerHTML = ''; this._log('info', 'Repo reset.'); }
+      else {
+        this.engine.reset(); this.renderer?.render();
+        const out = document.getElementById('terminal-output');
+        if (out) out.innerHTML = '';
+        this._log('info', t('repoReset'));
+      }
     });
 
     document.getElementById('ai-send')?.addEventListener('click', () => this._sendChat());
     document.getElementById('ai-input')?.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this._sendChat(); }
     });
-
-    // Quick AI questions
-    document.querySelectorAll('.quick-q').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const q = btn.dataset.q;
-        const inp = document.getElementById('ai-input');
-        if (inp) { inp.value = q; this._sendChat(); }
-      });
-    });
   }
 
-  // ── COMMAND HANDLER ──
+  // ══════════════════════════════════════
+  // COMMAND HANDLING
+  // ══════════════════════════════════════
   _handleCmd(raw) {
     const input = raw.trim();
     if (!input) return;
@@ -292,20 +404,15 @@ Give a helpful, specific 3-sentence explanation. Use backtick code formatting. E
     this._logRaw(`<span class="term-prompt">${this._esc(branch)} $</span> <span class="term-cmd">${this._esc(input)}</span>`);
 
     const result = this.engine.execute(input);
-    if (result.msg) {
-      this._log(result.ok ? 'out' : 'err', result.msg);
-    }
+    if (result.msg) this._log(result.ok ? 'out' : 'err', result.msg);
 
     const out = document.getElementById('terminal-output');
     if (out) out.scrollTop = out.scrollHeight;
 
-    // Update prompt
     const pl = document.getElementById('prompt-branch');
     if (pl) pl.textContent = this.engine.headBranch || '(detached)';
 
-    if (this.mode === 'learn' && this.currentChallenge) {
-      this._checkGoals();
-    }
+    if (this.mode === 'learn' && this.currentChallenge) this._checkGoals();
   }
 
   _checkGoals() {
@@ -317,12 +424,12 @@ Give a helpful, specific 3-sentence explanation. Use backtick code formatting. E
 
     ch.goals.forEach(goal => {
       let passed = false;
-      try { passed = goal.check(state, history, this.setupCommitCount); } catch(e) {}
+      try { passed = goal.check(state, history, this.setupCommitCount); } catch (e) { }
       const chk = document.getElementById(`check-${goal.id}`);
       if (chk) {
         if (passed) { chk.classList.add('done'); chk.textContent = '✓'; }
         else allDone = false;
-      } else if (!passed) { allDone = false; }
+      } else if (!passed) allDone = false;
     });
 
     if (allDone && !this.completedChallenges.includes(ch.id)) {
@@ -343,30 +450,30 @@ Give a helpful, specific 3-sentence explanation. Use backtick code formatting. E
   _showSuccess(ch) {
     const overlay = document.getElementById('success-overlay');
     if (!overlay) return;
-    overlay.querySelector('.success-title').textContent = '🎉 Challenge Complete!';
+    overlay.querySelector('.success-title').textContent = t('challengeComplete');
     overlay.querySelector('.success-sub').textContent = ch.name;
-    overlay.querySelector('.xp-earned').textContent = `+${ch.xp} XP`;
+    overlay.querySelector('.xp-earned').textContent = `+${ch.xp} ${t('xpEarned') || 'XP'}`;
+    overlay.querySelector('.next-btn').textContent = t('nextChallenge');
+    overlay.querySelector('.retry-btn').textContent = t('keepExploring');
     overlay.classList.add('show');
 
     overlay.querySelector('.next-btn').onclick = () => {
       overlay.classList.remove('show');
       this._nextChallenge();
     };
-    overlay.querySelector('.retry-btn').onclick = () => {
-      overlay.classList.remove('show');
-    };
+    overlay.querySelector('.retry-btn').onclick = () => overlay.classList.remove('show');
   }
 
   _nextChallenge() {
     for (const tier of TIERS) {
-      for (let i = 0; i < tier.challenges.length; i++) {
-        if (!this.completedChallenges.includes(tier.challenges[i].id)) {
-          this._loadChallenge(tier, tier.challenges[i]);
+      for (const ch of tier.challenges) {
+        if (!this.completedChallenges.includes(ch.id)) {
+          this._loadChallenge(tier, ch);
           return;
         }
       }
     }
-    this._log('success', '🧙 You completed ALL challenges! You are a Git Wizard!');
+    this._log('success', t('alreadyCompleted'));
   }
 
   _sandbox() {
@@ -374,14 +481,19 @@ Give a helpful, specific 3-sentence explanation. Use backtick code formatting. E
     this.currentChallenge = null;
     this.engine.reset();
     this.renderer?.render();
-    document.getElementById('terminal-output').innerHTML = '';
-    this._log('info', '🏖️  Sandbox mode — free exploration, no goals!');
+    const out = document.getElementById('terminal-output');
+    if (out) out.innerHTML = '';
+    this._log('info', t('sandboxMode'));
+    this._renderSandboxPanel();
+  }
+
+  _renderSandboxPanel() {
     const panel = document.getElementById('mission-content');
     if (panel) panel.innerHTML = `
       <div style="text-align:center;padding:50px 20px;color:var(--text-muted)">
         <div style="font-size:48px;margin-bottom:12px">🏖️</div>
-        <div style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Sandbox Mode</div>
-        <div style="font-size:13px;line-height:1.7">No objectives. No limits.<br>Experiment freely with any git commands!</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:8px">${t('sandboxTitle')}</div>
+        <div style="font-size:13px;line-height:1.7">${(t('sandboxDesc') || '').replace(/\n/g, '<br>')}</div>
       </div>`;
   }
 
@@ -391,6 +503,9 @@ Give a helpful, specific 3-sentence explanation. Use backtick code formatting. E
     if (first) this._loadChallenge(TIERS[0], first);
   }
 
+  // ══════════════════════════════════════
+  // XP & LEVEL
+  // ══════════════════════════════════════
   _updateXP() {
     const el = document.getElementById('xp-count');
     if (el) el.textContent = this.xp.toLocaleString() + ' XP';
@@ -403,7 +518,9 @@ Give a helpful, specific 3-sentence explanation. Use backtick code formatting. E
     if (badge) badge.textContent = lvl.name;
   }
 
-  // ── TERMINAL ──
+  // ══════════════════════════════════════
+  // TERMINAL
+  // ══════════════════════════════════════
   _log(type, text) {
     const out = document.getElementById('terminal-output');
     if (!out) return;
@@ -411,6 +528,7 @@ Give a helpful, specific 3-sentence explanation. Use backtick code formatting. E
     div.className = `term-${type}`;
     div.textContent = text;
     out.appendChild(div);
+    out.scrollTop = out.scrollHeight;
   }
 
   _logRaw(html) {
@@ -422,10 +540,12 @@ Give a helpful, specific 3-sentence explanation. Use backtick code formatting. E
   }
 
   _esc(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  // ── AUTOCOMPLETE ──
+  // ══════════════════════════════════════
+  // AUTOCOMPLETE
+  // ══════════════════════════════════════
   _showAC(val) {
     const ac = document.getElementById('autocomplete');
     if (!ac) return;
@@ -469,9 +589,8 @@ Give a helpful, specific 3-sentence explanation. Use backtick code formatting. E
     ac.querySelectorAll('.ac-item').forEach(item => {
       item.addEventListener('click', () => {
         const inp = document.getElementById('cmd-input');
-        if (inp) inp.value = item.dataset.cmd;
+        if (inp) { inp.value = item.dataset.cmd; inp.focus(); }
         this._hideAC();
-        inp?.focus();
       });
     });
 
@@ -487,7 +606,9 @@ Give a helpful, specific 3-sentence explanation. Use backtick code formatting. E
     document.getElementById('cmd-input')?.focus();
   }
 
-  // ── AI CHAT ──
+  // ══════════════════════════════════════
+  // AI CHAT
+  // ══════════════════════════════════════
   async _sendChat() {
     const inp = document.getElementById('ai-input');
     const btn = document.getElementById('ai-send');
@@ -503,15 +624,16 @@ Give a helpful, specific 3-sentence explanation. Use backtick code formatting. E
 
     const loading = document.createElement('div');
     loading.className = 'ai-msg assistant';
-    loading.innerHTML = '<div class="msg-label">GitQuest AI</div><span style="opacity:0.5">Thinking...</span>';
+    loading.innerHTML = `<div class="msg-label">${t('ai') || 'GitQuest AI'}</div><span style="opacity:0.5">${t('thinkingMsg') || 'Thinking...'}</span>`;
     msgs.appendChild(loading);
     msgs.scrollTop = msgs.scrollHeight;
 
     const state = this.engine.getState();
-    const sys = `You are an expert Git tutor in GitQuest, an interactive git learning app.
-Current state: branches=${Object.keys(state.branches).join(',')}, HEAD=${state.headBranch || 'detached'}.
-${this.currentChallenge ? `Current challenge: "${this.currentChallenge.name}"` : 'Sandbox mode.'}
-Be concise (2-4 sentences), friendly, use \`code\` backtick formatting. Be specific and helpful.`;
+    const langName = window.currentLang().name;
+    const sys = `You are an expert Git tutor in GitQuest. Respond in ${langName}.
+Repo state: branches=${Object.keys(state.branches).join(',')}, HEAD=${state.headBranch || 'detached'}.
+${this.currentChallenge ? `Challenge: "${this.currentChallenge.name}"` : 'Sandbox mode.'}
+Be concise (2-4 sentences), use \`code\` backtick formatting, be encouraging and specific.`;
 
     try {
       const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -528,11 +650,11 @@ Be concise (2-4 sentences), friendly, use \`code\` backtick formatting. Be speci
       this.aiHistory.push({ role: 'assistant', content: reply });
       loading.remove();
       this._renderChat(msgs);
-    } catch(e) {
+    } catch (e) {
       loading.remove();
       const err = document.createElement('div');
       err.className = 'ai-msg assistant';
-      err.textContent = 'AI unavailable. Check your connection.';
+      err.textContent = t('aiUnavailable') || 'AI unavailable.';
       msgs.appendChild(err);
     }
 
@@ -543,7 +665,7 @@ Be concise (2-4 sentences), friendly, use \`code\` backtick formatting. Be speci
   _renderChat(container) {
     container.innerHTML = this.aiHistory.map(m => `
       <div class="ai-msg ${m.role}">
-        <div class="msg-label">${m.role === 'user' ? 'You' : 'GitQuest AI'}</div>
+        <div class="msg-label">${m.role === 'user' ? (t('you') || 'You') : (t('ai') || 'GitQuest AI')}</div>
         ${this._fmtAI(m.content)}
       </div>`).join('');
   }
@@ -555,181 +677,8 @@ Be concise (2-4 sentences), friendly, use \`code\` backtick formatting. Be speci
   }
 }
 
+// Boot
 window.addEventListener('DOMContentLoaded', () => {
   window.app = new GitQuestApp();
   window.app.init();
 });
-
-// ══════════════════════════════════════════════
-// THEME & LANGUAGE — appended to GitQuestApp
-// ══════════════════════════════════════════════
-
-// Patch init to also set up theme + language
-const _origInit = GitQuestApp.prototype.init;
-GitQuestApp.prototype.init = function() {
-  this._initTheme();
-  this._initLang();
-  _origInit.call(this);
-  this._applyI18n();
-};
-
-// ── THEME ──
-GitQuestApp.prototype._initTheme = function() {
-  const saved = localStorage.getItem('gq_theme') || 'dark';
-  this._setTheme(saved);
-
-  document.getElementById('theme-toggle')?.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme');
-    this._setTheme(current === 'dark' ? 'light' : 'dark');
-  });
-};
-
-GitQuestApp.prototype._setTheme = function(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('gq_theme', theme);
-  const btn = document.getElementById('theme-toggle');
-  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
-  // Re-render graph so SVG colors update
-  this.renderer?.render();
-};
-
-// ── LANGUAGE ──
-GitQuestApp.prototype._initLang = function() {
-  // Build dropdown
-  const dropdown = document.getElementById('lang-dropdown');
-  if (!dropdown) return;
-
-  const currentCode = localStorage.getItem('gq_lang') || 'en';
-  dropdown.innerHTML = '';
-
-  Object.entries(LANGUAGES).forEach(([code, lang]) => {
-    const opt = document.createElement('div');
-    opt.className = 'lang-option' + (code === currentCode ? ' active' : '');
-    opt.innerHTML = `<span class="lang-flag">${lang.flag}</span><span>${lang.name}</span>`;
-    opt.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this._setLang(code);
-      document.getElementById('lang-picker')?.classList.remove('open');
-    });
-    dropdown.appendChild(opt);
-  });
-
-  // Update current button display
-  this._updateLangBtn(currentCode);
-
-  // Toggle dropdown
-  document.getElementById('lang-current-btn')?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    document.getElementById('lang-picker')?.classList.toggle('open');
-  });
-
-  // Close on outside click
-  document.addEventListener('click', () => {
-    document.getElementById('lang-picker')?.classList.remove('open');
-  });
-};
-
-GitQuestApp.prototype._setLang = function(code) {
-  localStorage.setItem('gq_lang', code);
-  this._updateLangBtn(code);
-
-  // Update dropdown active state
-  document.querySelectorAll('.lang-option').forEach((opt, i) => {
-    const langCode = Object.keys(LANGUAGES)[i];
-    opt.classList.toggle('active', langCode === code);
-  });
-
-  // Apply RTL if needed
-  const lang = LANGUAGES[code];
-  document.documentElement.dir = lang.dir || 'ltr';
-  document.documentElement.lang = code;
-
-  // Re-apply all translations
-  this._applyI18n();
-
-  // Reload current challenge panel
-  if (this.currentChallenge) {
-    this._renderMission(this.currentChallenge);
-  } else if (this.mode === 'sandbox') {
-    this._renderSandboxPanel();
-  }
-
-  // Re-log welcome in new lang
-  const out = document.getElementById('terminal-output');
-  if (out && !out.hasChildNodes()) {
-    this._log('info', t('welcome'));
-    this._log('info', t('welcomeSub'));
-  }
-};
-
-GitQuestApp.prototype._updateLangBtn = function(code) {
-  const lang = LANGUAGES[code] || LANGUAGES.en;
-  const flag = document.getElementById('lang-flag');
-  const name = document.getElementById('lang-name');
-  if (flag) flag.textContent = lang.flag;
-  if (name) name.textContent = code.toUpperCase();
-};
-
-// ── APPLY TRANSLATIONS ──
-GitQuestApp.prototype._applyI18n = function() {
-  // Translate all data-i18n elements
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    const val = t(key);
-    if (val) el.textContent = val;
-  });
-
-  // Translate placeholders
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    const key = el.getAttribute('data-i18n-placeholder');
-    const val = t(key);
-    if (val) el.placeholder = val;
-  });
-
-  // Quick questions
-  document.querySelectorAll('.quick-q').forEach(btn => {
-    const qi = btn.getAttribute('data-qi');
-    const qf = btn.getAttribute('data-qf');
-    if (qi) btn.textContent = t(qi);
-    if (qf) {
-      btn.onclick = () => {
-        const inp = document.getElementById('ai-input');
-        if (inp) { inp.value = t(qf); }
-        this._sendChat();
-      };
-    }
-  });
-
-  // Update terminal placeholder
-  const inp = document.getElementById('cmd-input');
-  if (inp) inp.placeholder = 'git commit -m "' + (t('welcome') || 'First commit') + '"';
-};
-
-// Patch _sandbox to use translations
-const _origSandbox = GitQuestApp.prototype._sandbox;
-GitQuestApp.prototype._sandbox = function() {
-  this.mode = 'sandbox';
-  this.currentChallenge = null;
-  this.engine.reset();
-  this.renderer?.render();
-  const out = document.getElementById('terminal-output');
-  if (out) out.innerHTML = '';
-  this._log('info', t('sandboxMode'));
-  this._renderSandboxPanel();
-};
-
-GitQuestApp.prototype._renderSandboxPanel = function() {
-  const panel = document.getElementById('mission-content');
-  if (panel) panel.innerHTML = `
-    <div style="text-align:center;padding:50px 20px;color:var(--text-muted)">
-      <div style="font-size:48px;margin-bottom:12px">🏖️</div>
-      <div style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:8px">${t('sandboxTitle')}</div>
-      <div style="font-size:13px;line-height:1.7">${t('sandboxDesc').replace(/\n/g,'<br>')}</div>
-    </div>`;
-};
-
-// Patch _log to use translated welcome on init
-const _origLog = GitQuestApp.prototype._log;
-GitQuestApp.prototype._logI18n = function(key) {
-  this._log('info', t(key));
-};

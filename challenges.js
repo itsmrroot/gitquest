@@ -65,11 +65,13 @@ const TIERS = [
         description: 'Make commits on a branch to diverge from main. This is how feature development works.',
         setup: ['git commit -m "Setup"', 'git checkout -b feature'],
         goals: [
-          { id: 'g1', text: 'Make 2 commits on feature branch', check: (s, h, initialCount) => {
-            const featureTip = s.branches['feature'];
-            // Count commits reachable from feature but not main
-            return featureTip !== s.branches['main'];
-          }}
+          {
+            id: 'g1', text: 'Make 2 commits on feature branch', check: (s, h, initialCount) => {
+              const featureTip = s.branches['feature'];
+              // Count commits reachable from feature but not main
+              return featureTip !== s.branches['main'];
+            }
+          }
         ],
         hints: [
           'git commit -m "Feature work"',
