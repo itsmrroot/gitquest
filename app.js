@@ -111,6 +111,7 @@ class GitQuestApp {
       opt.classList.toggle('active', Object.keys(LANGUAGES)[i] === code);
     });
     this._applyI18n();
+    this._buildSidebar();
     if (this.currentChallenge) this._renderMission(this.currentChallenge);
     else if (this.mode === 'sandbox') this._renderSandboxPanel();
   }
@@ -507,7 +508,7 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
       // Switch to sandbox / clear terminal
       const out = document.getElementById('terminal-output');
       if (out) out.innerHTML = '';
-      this._log('success', '✅ All progress reset. Start fresh!');
+      this._log('success', t('progressReset'));
       this._updateXP();
       document.getElementById('modal-reset-all')?.classList.remove('show');
       document.getElementById('goal-panel')?.style.setProperty('display', 'none');
@@ -601,7 +602,7 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     this.renderer?.render();
 
     this.cmdsThisChallenge.pop();
-    this._log('info', '↩ Undid last command.');
+    this._log('info', t('undidCmd'));
 
     const pl = document.getElementById('prompt-branch');
     if (pl) pl.textContent = this.engine.headBranch || '(detached)';
@@ -1121,9 +1122,9 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     dot.className = 'ai-dot' + (state === 'loading' ? ' loading' : state === 'error' ? ' error' : '');
     const label = document.querySelector('.ai-status span:last-child');
     if (label) {
-      label.textContent = state === 'loading' ? 'Thinking...' :
-                          state === 'error'   ? 'Connection error' :
-                          'GitQuest AI — powered by Gemini';
+      label.textContent = state === 'loading' ? t('thinkingMsg') :
+                          state === 'error'   ? t('aiUnavailable') :
+                          t('poweredBy');
     }
   }
 

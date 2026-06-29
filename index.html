@@ -113,7 +113,7 @@
       <!-- ── GOAL TO REACH PANEL ── -->
       <div id="goal-panel" style="display:none">
         <div class="goal-panel-header" id="goal-drag-handle">
-          <span class="goal-panel-title">🎯 Goal To Reach</span>
+          <span class="goal-panel-title" data-i18n="goalToReach">🎯 Goal To Reach</span>
           <div class="goal-panel-btns">
             <button class="goal-panel-btn" id="goal-toggle" title="Minimise">−</button>
             <button class="goal-panel-btn goal-close-btn" id="goal-close" title="Close">×</button>
@@ -126,7 +126,7 @@
       </div>
 
       <!-- Re-open badge shown when goal panel is closed -->
-      <button id="goal-reopen" style="display:none" title="Show goal graph">🎯 Goal</button>
+      <button id="goal-reopen" style="display:none" title="Show goal graph" data-i18n="goalBtnLabel">🎯 Goal</button>
     </div>
 
     <div id="terminal-area">
@@ -165,48 +165,48 @@
 
     <div class="panel-content" id="cheatsheet-content">
       <div class="cheat-group">
-        <div class="cheat-group-title">📸 Saving Work</div>
-        <div class="cheat-item"><span class="cheat-cmd">git add .</span><span class="cheat-desc">Stage all changes</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git commit -m "msg"</span><span class="cheat-desc">Commit with message</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git commit --amend</span><span class="cheat-desc">Edit last commit</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git stash</span><span class="cheat-desc">Stash changes</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git stash pop</span><span class="cheat-desc">Apply stash</span></div>
+        <div class="cheat-group-title" data-i18n="cheatSaving">📸 Saving Work</div>
+        <div class="cheat-item"><span class="cheat-cmd">git add .</span><span class="cheat-desc" data-i18n="cheatStageAll">Stage all changes</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git commit -m "msg"</span><span class="cheat-desc" data-i18n="cheatCommit">Commit with message</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git commit --amend</span><span class="cheat-desc" data-i18n="cheatAmend">Edit last commit</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git stash</span><span class="cheat-desc" data-i18n="cheatStash">Stash changes</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git stash pop</span><span class="cheat-desc" data-i18n="cheatStashPop">Apply stash</span></div>
       </div>
       <div class="cheat-group">
-        <div class="cheat-group-title">🌿 Branching</div>
-        <div class="cheat-item"><span class="cheat-cmd">git branch</span><span class="cheat-desc">List branches</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git branch &lt;name&gt;</span><span class="cheat-desc">Create branch</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git checkout -b &lt;name&gt;</span><span class="cheat-desc">Create + switch</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git switch &lt;name&gt;</span><span class="cheat-desc">Switch (modern)</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git branch -d &lt;name&gt;</span><span class="cheat-desc">Delete branch</span></div>
+        <div class="cheat-group-title" data-i18n="cheatBranching">🌿 Branching</div>
+        <div class="cheat-item"><span class="cheat-cmd">git branch</span><span class="cheat-desc" data-i18n="cheatListBranch">List branches</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git branch &lt;name&gt;</span><span class="cheat-desc" data-i18n="cheatCreateBranch">Create branch</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git checkout -b &lt;name&gt;</span><span class="cheat-desc" data-i18n="cheatCreateSwitch">Create + switch</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git switch &lt;name&gt;</span><span class="cheat-desc" data-i18n="cheatSwitch">Switch (modern)</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git branch -d &lt;name&gt;</span><span class="cheat-desc" data-i18n="cheatDeleteBranch">Delete branch</span></div>
       </div>
       <div class="cheat-group">
-        <div class="cheat-group-title">🔀 Merging & Rebasing</div>
-        <div class="cheat-item"><span class="cheat-cmd">git merge &lt;branch&gt;</span><span class="cheat-desc">Merge branch</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git merge --no-ff</span><span class="cheat-desc">Force merge commit</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git rebase &lt;branch&gt;</span><span class="cheat-desc">Rebase onto branch</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git cherry-pick &lt;hash&gt;</span><span class="cheat-desc">Apply one commit</span></div>
+        <div class="cheat-group-title" data-i18n="cheatMerging">🔀 Merging & Rebasing</div>
+        <div class="cheat-item"><span class="cheat-cmd">git merge &lt;branch&gt;</span><span class="cheat-desc" data-i18n="cheatMerge">Merge branch</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git merge --no-ff</span><span class="cheat-desc" data-i18n="cheatNoFF">Force merge commit</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git rebase &lt;branch&gt;</span><span class="cheat-desc" data-i18n="cheatRebase">Rebase onto branch</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git cherry-pick &lt;hash&gt;</span><span class="cheat-desc" data-i18n="cheatCherryPick">Apply one commit</span></div>
       </div>
       <div class="cheat-group">
-        <div class="cheat-group-title">⏪ Undoing</div>
-        <div class="cheat-item"><span class="cheat-cmd">git revert HEAD</span><span class="cheat-desc">Safe undo (new commit)</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git reset --soft HEAD~1</span><span class="cheat-desc">Undo, keep staged</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git reset --mixed HEAD~1</span><span class="cheat-desc">Undo, unstage</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git reset --hard HEAD~1</span><span class="cheat-desc">⚠️ Delete commit + changes</span></div>
+        <div class="cheat-group-title" data-i18n="cheatUndoing">⏪ Undoing</div>
+        <div class="cheat-item"><span class="cheat-cmd">git revert HEAD</span><span class="cheat-desc" data-i18n="cheatRevert">Safe undo (new commit)</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git reset --soft HEAD~1</span><span class="cheat-desc" data-i18n="cheatSoft">Undo, keep staged</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git reset --mixed HEAD~1</span><span class="cheat-desc" data-i18n="cheatMixed">Undo, unstage</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git reset --hard HEAD~1</span><span class="cheat-desc" data-i18n="cheatHard">⚠️ Delete commit + changes</span></div>
       </div>
       <div class="cheat-group">
-        <div class="cheat-group-title">🔍 Inspecting</div>
-        <div class="cheat-item"><span class="cheat-cmd">git log</span><span class="cheat-desc">Commit history</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git log --oneline</span><span class="cheat-desc">Compact history</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git status</span><span class="cheat-desc">Working tree status</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git tag &lt;name&gt;</span><span class="cheat-desc">Create tag at HEAD</span></div>
+        <div class="cheat-group-title" data-i18n="cheatInspecting">🔍 Inspecting</div>
+        <div class="cheat-item"><span class="cheat-cmd">git log</span><span class="cheat-desc" data-i18n="cheatLog">Commit history</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git log --oneline</span><span class="cheat-desc" data-i18n="cheatLogOneline">Compact history</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git status</span><span class="cheat-desc" data-i18n="cheatStatus">Working tree status</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git tag &lt;name&gt;</span><span class="cheat-desc" data-i18n="cheatTag">Create tag at HEAD</span></div>
       </div>
       <div class="cheat-group">
-        <div class="cheat-group-title">🌐 Remotes</div>
-        <div class="cheat-item"><span class="cheat-cmd">git remote add origin &lt;url&gt;</span><span class="cheat-desc">Add remote</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git push origin main</span><span class="cheat-desc">Push branch</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git pull</span><span class="cheat-desc">Fetch + merge</span></div>
-        <div class="cheat-item"><span class="cheat-cmd">git fetch</span><span class="cheat-desc">Download changes</span></div>
+        <div class="cheat-group-title" data-i18n="cheatRemotes">🌐 Remotes</div>
+        <div class="cheat-item"><span class="cheat-cmd">git remote add origin &lt;url&gt;</span><span class="cheat-desc" data-i18n="cheatRemoteAdd">Add remote</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git push origin main</span><span class="cheat-desc" data-i18n="cheatPush">Push branch</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git pull</span><span class="cheat-desc" data-i18n="cheatPull">Fetch + merge</span></div>
+        <div class="cheat-item"><span class="cheat-cmd">git fetch</span><span class="cheat-desc" data-i18n="cheatFetch">Download changes</span></div>
       </div>
     </div>
 
@@ -215,7 +215,7 @@
       <div class="ai-chat-header">
         <div class="ai-status" id="ai-status">
           <span class="ai-dot"></span>
-          <span>GitQuest AI — powered by Claude</span>
+          <span data-i18n="poweredBy">GitQuest AI — powered by Gemini</span>
         </div>
       </div>
       <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:12px" data-i18n="aiContext">
@@ -239,19 +239,19 @@
   <nav id="mobile-nav">
     <button class="mobile-nav-btn active" data-panel="graph">
       <span class="mobile-nav-icon">⎇</span>
-      <span>Graph</span>
+      <span data-i18n="graphLabel">Graph</span>
     </button>
     <button class="mobile-nav-btn" data-panel="challenges">
       <span class="mobile-nav-icon">☰</span>
-      <span>Levels</span>
+      <span data-i18n="challenges">Levels</span>
     </button>
     <button class="mobile-nav-btn" data-panel="mission">
       <span class="mobile-nav-icon">🎯</span>
-      <span>Mission</span>
+      <span data-i18n="mission">Mission</span>
     </button>
     <button class="mobile-nav-btn" data-panel="ai">
       <span class="mobile-nav-icon">🤖</span>
-      <span>AI</span>
+      <span data-i18n="aiTutor">AI</span>
     </button>
   </nav>
 
