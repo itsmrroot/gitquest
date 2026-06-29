@@ -891,9 +891,15 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     return localStorage.getItem('gq_gemini_key') || '';
   }
 
+  _getGeminiModel() {
+    return localStorage.getItem('gq_gemini_model') || 'gemini-1.5-flash';
+  }
+
   async _callGemini(userPrompt, systemPrompt, history = []) {
     const key = this._getGeminiKey();
     if (!key) throw new Error('No API key set.');
+
+    const model = this._getGeminiModel();
 
     // Convert chat history to Gemini format (role: 'user'|'model')
     const contents = [
@@ -905,7 +911,7 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     ];
 
     const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -947,6 +953,14 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     if (existing) return; // already shown
 
     const key = this._getGeminiKey();
+    const model = this._getGeminiModel();
+    const MODELS = [
+      { id: 'gemini-1.5-flash',    label: 'Gemini 1.5 Flash',     note: '✅ Recommended — generous free tier' },
+      { id: 'gemini-1.5-flash-8b', label: 'Gemini 1.5 Flash 8B',  note: '⚡ Fastest, most free-tier friendly' },
+      { id: 'gemini-2.0-flash-lite',label: 'Gemini 2.0 Flash Lite',note: '🆕 Newer but may need billing' },
+      { id: 'gemini-2.0-flash',    label: 'Gemini 2.0 Flash',     note: '🆕 Newest — may need billing in some regions' },
+    ];
+
     const setup = document.createElement('div');
     setup.className = 'key-setup';
     setup.innerHTML = `
@@ -954,29 +968,36 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
       <div class="key-setup-title">Connect AI Tutor</div>
       <div class="key-setup-desc">Paste your <strong>free</strong> Google Gemini API key below.<br>Get one at <a class="key-link" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com</a> — no credit card needed.</div>
       <input class="key-input" id="gemini-key-input" type="password" placeholder="AIzaSy..." value="${this._esc(key)}" spellcheck="false" />
-      <button class="key-save-btn" id="key-save-btn">✓ Save Key</button>
+      <div class="model-label">Model</div>
+      <select class="model-select" id="gemini-model-select">
+        ${MODELS.map(m => `<option value="${m.id}" ${m.id === model ? 'selected' : ''}>${m.label} — ${m.note}</option>`).join('')}
+      </select>
+      <button class="key-save-btn" id="key-save-btn">✓ Save & Connect</button>
       ${key ? '<button class="key-clear-btn" id="key-clear-btn">✕ Remove Key</button>' : ''}
-      <div class="key-note">🔒 Stored only in your browser's localStorage. Free tier: 1,500 requests/day.</div>
+      <div class="key-note">🔒 Stored only in your browser's localStorage. Never sent anywhere except Google.</div>
     `;
     panel.insertBefore(setup, panel.firstChild);
 
     document.getElementById('key-save-btn')?.addEventListener('click', () => {
       const val = document.getElementById('gemini-key-input')?.value.trim();
       if (!val) return;
+      const sel = document.getElementById('gemini-model-select')?.value || 'gemini-1.5-flash';
       localStorage.setItem('gq_gemini_key', val);
+      localStorage.setItem('gq_gemini_model', sel);
       setup.remove();
       this._setAIStatus('online');
       const msgs = document.getElementById('ai-chat-messages');
       if (msgs) {
         const note = document.createElement('div');
         note.className = 'ai-msg assistant';
-        note.innerHTML = `<div class="msg-label">GitQuest AI</div>✅ API key saved! Ask me anything about Git.`;
+        note.innerHTML = `<div class="msg-label">GitQuest AI</div>✅ Connected via <strong>${sel}</strong>. Ask me anything about Git!`;
         msgs.appendChild(note);
       }
     });
 
     document.getElementById('key-clear-btn')?.addEventListener('click', () => {
       localStorage.removeItem('gq_gemini_key');
+      localStorage.removeItem('gq_gemini_model');
       setup.remove();
       this._renderKeySetup();
     });
