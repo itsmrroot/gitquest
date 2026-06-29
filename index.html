@@ -156,7 +156,6 @@
     <div class="panel-tabs">
       <div class="panel-tab active" data-tab="mission" data-i18n="mission">Mission</div>
       <div class="panel-tab" data-tab="cheatsheet" data-i18n="cheatsheet">Cheatsheet</div>
-      <div class="panel-tab" data-tab="ai-chat" data-i18n="aiTutor">AI Tutor</div>
     </div>
 
     <div class="panel-content active" id="mission-content">
@@ -210,30 +209,6 @@
       </div>
     </div>
 
-    <!-- AI Chat -->
-    <div class="panel-content" id="ai-chat-content">
-      <div class="ai-chat-header">
-        <div class="ai-status" id="ai-status">
-          <span class="ai-dot"></span>
-          <span data-i18n="poweredBy">GitQuest AI — powered by Gemini</span>
-        </div>
-      </div>
-      <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:12px" data-i18n="aiContext">
-        Ask anything about Git. I know your current challenge and repo state.
-      </p>
-      <div class="ai-chat-msgs" id="ai-chat-messages"></div>
-      <div class="ai-input-row">
-        <textarea class="ai-input" id="ai-input" rows="2" data-i18n-placeholder="askAnything" placeholder="Ask anything about Git..."></textarea>
-        <button class="ai-send-btn" id="ai-send" data-i18n="ask">Ask</button>
-      </div>
-      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px" data-i18n="quickQuestions">Quick questions</div>
-        <button class="hint-btn quick-q" data-qi="q1" data-qf="q1full"></button>
-        <button class="hint-btn quick-q" data-qi="q2" data-qf="q2full"></button>
-        <button class="hint-btn quick-q" data-qi="q3" data-qf="q3full"></button>
-        <button class="hint-btn quick-q" data-qi="q4" data-qf="q4full"></button>
-      </div>
-    </div>
   </aside>
 
   <nav id="mobile-nav">
@@ -248,10 +223,6 @@
     <button class="mobile-nav-btn" data-panel="mission">
       <span class="mobile-nav-icon">🎯</span>
       <span data-i18n="mission">Mission</span>
-    </button>
-    <button class="mobile-nav-btn" data-panel="ai">
-      <span class="mobile-nav-icon">🤖</span>
-      <span data-i18n="aiTutor">AI</span>
     </button>
   </nav>
 

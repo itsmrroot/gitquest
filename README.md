@@ -1,6 +1,6 @@
 # ⎇ GitQuest — Master Git from Beginner to Wizard
 
-> The most powerful interactive Git learning platform. Visual, AI-powered, and built for real-world mastery.
+> The most powerful interactive Git learning platform. Visual, multi-language, and built for real-world mastery.
 
 
 ## 🚀 Live Demo
@@ -19,7 +19,6 @@ While LearnGitBranching is great for visualizing branching, GitQuest goes furthe
 | Interactive terminal | ✅ | ✅ |
 | Structured levels | ✅ | ✅ |
 | Sandbox mode | ✅ | ✅ |
-| AI-powered tutor | ❌ | ✅ Gemini-powered |
 | Real-world workflows | Partial | ✅ Gitflow, Hotfix, etc. |
 | Hint system | Basic | ✅ Multi-level hints |
 | XP & progression | ❌ | ✅ 5 levels, XP badges |
@@ -145,21 +144,9 @@ Made a mistake? Type `git undo` (or just `undo`) to roll back the last state-cha
 
 ---
 
-## 🤖 AI Tutor
-
-GitQuest embeds **Google Gemini** as a real-time AI tutor that:
-- Knows your **current challenge and objectives**
-- Knows your **current repo state** (branches, HEAD)
-- Tracks your **command history** to give contextual advice
-- Answers any Git question in the AI Chat tab
-
-To enable: paste your free Gemini API key in the **AI Tutor** tab. Get one at [aistudio.google.com](https://aistudio.google.com/app/apikey) — no credit card needed. GitQuest auto-detects all models available on your key.
-
----
-
 ## 🌍 Multi-language Support
 
-GitQuest is fully translated into **10 languages**: English, German, French, Spanish, Portuguese, Arabic, Japanese, Chinese, Hindi, and Turkish. The UI, mission text, hints, and AI responses all adapt to the selected language.
+GitQuest is fully translated into **10 languages**: English, German, French, Spanish, Portuguese, Arabic, Japanese, Chinese, Hindi, and Turkish. The entire UI adapts to the selected language.
 
 ---
 
@@ -262,7 +249,7 @@ MIT License — use it, fork it, learn from it.
 
 Inspired by [LearnGitBranching](https://github.com/pcottle/learnGitBranching) by Peter Cottle.
 
-Built with ❤️ using vanilla JS, SVG, and the Google Gemini API.
+Built with ❤️ using vanilla JS and SVG.
 
 ---
 

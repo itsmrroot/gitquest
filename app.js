@@ -14,7 +14,6 @@ class GitQuestApp {
     this.cmdHistory = [];
     this.histIdx = -1;
     this.mode = 'learn';
-    this.aiHistory = [];
     this.hintIdx = 0;
     this.cmdsThisChallenge = [];
     this.setupCommitCount = 0;
@@ -132,16 +131,6 @@ class GitQuestApp {
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
       const val = t(el.getAttribute('data-i18n-placeholder'));
       if (val) el.placeholder = val;
-    });
-    document.querySelectorAll('.quick-q').forEach(btn => {
-      const qi = btn.getAttribute('data-qi');
-      const qf = btn.getAttribute('data-qf');
-      if (qi) btn.textContent = t(qi);
-      btn.onclick = () => {
-        const inp = document.getElementById('ai-input');
-        if (inp) inp.value = t(qf);
-        this._sendChat();
-      };
     });
   }
 
@@ -394,11 +383,8 @@ class GitQuestApp {
       ${ch.concept ? `<div class="concept-box">💡 <strong>${t('concept')}:</strong> ${ch.concept}</div>` : ''}
       <button class="hint-btn" id="hint-btn-main">${t('showHint') || '💡 Show Hint'} (${ch.hints?.length || 0})</button>
       <div class="hint-box" id="hint-box"></div>
-      <button class="ask-ai-btn" id="ask-ai-btn-main">${t('askAI') || '✨ Ask AI Tutor'}</button>
-      <div class="ai-response" id="mission-ai"></div>
     `;
     document.getElementById('hint-btn-main')?.addEventListener('click', () => this._showHint());
-    document.getElementById('ask-ai-btn-main')?.addEventListener('click', () => this._askAIInline());
   }
 
   _showHint() {
@@ -409,39 +395,6 @@ class GitQuestApp {
     box.style.display = 'block';
     box.textContent = '💡 ' + ch.hints[this.hintIdx % ch.hints.length];
     this.hintIdx++;
-  }
-
-  // Inline AI in mission panel
-  async _askAIInline() {
-    const ch = this.currentChallenge;
-    if (!ch) return;
-    const box = document.getElementById('mission-ai');
-    if (!box) return;
-
-    if (!this._getGeminiKey()) {
-      box.style.display = 'block';
-      box.innerHTML = `<span style="color:var(--accent-yellow)">${t('addApiKey').replace('{tab}', `<strong>${t('aiTutor')}</strong>`)}</span>`;
-      return;
-    }
-
-    box.style.display = 'block';
-    box.innerHTML = '<div class="ai-typing"><span></span><span></span><span></span></div>';
-
-    const state = this.engine.getState();
-    const langName = window.currentLang().name;
-    const sys = `You are a Git expert tutor inside GitQuest. Respond in ${langName}. Be concise, use backtick code formatting, be encouraging.`;
-    const prompt = `Challenge: "${ch.name}" — ${ch.description}
-Goals: ${ch.goals.map(g => g.text).join('; ')}
-Student commands so far: ${this.cmdsThisChallenge.slice(-5).join(', ') || 'none yet'}
-Branches: ${Object.keys(state.branches).join(', ')} | HEAD: ${state.headBranch || 'detached'}
-Give a helpful 3-sentence explanation. End with one concrete command to try next.`;
-
-    try {
-      const text = await this._callGemini(prompt, sys);
-      box.innerHTML = this._fmtAI(text || 'No response.');
-    } catch(e) {
-      box.innerHTML = `<span style="color:var(--accent-red)">AI error: ${this._esc(e.message)}</span>`;
-    }
   }
 
   // ══════════════════════════════════════
@@ -696,17 +649,6 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
       }
     });
 
-    document.getElementById('ai-send')?.addEventListener('click', () => this._sendChat());
-    document.getElementById('ai-input')?.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this._sendChat(); }
-    });
-
-    // Show key setup if no Gemini key is stored yet
-    if (!this._getGeminiKey()) {
-      this._renderKeySetup();
-    } else {
-      this._setAIStatus('online');
-    }
   }
 
   // ══════════════════════════════════════
@@ -1042,253 +984,6 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
   }
 
   // ══════════════════════════════════════
-  // GEMINI API
-  // ══════════════════════════════════════
-  _getGeminiKey() {
-    return localStorage.getItem('gq_gemini_key') || '';
-  }
-
-  _getGeminiModel() {
-    return localStorage.getItem('gq_gemini_model') || '';
-  }
-
-  async _fetchAvailableModels(key) {
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`,
-      { headers: { 'Content-Type': 'application/json' } }
-    );
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${resp.status}`);
-    }
-    const data = await resp.json();
-    const all = (data.models || [])
-      .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
-      .map(m => ({ id: m.name.replace('models/', ''), label: m.displayName || m.name.replace('models/', '') }));
-    // Sort preferred models first
-    const PREF = ['gemini-1.5-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash-8b', 'gemini-2.0-flash'];
-    all.sort((a, b) => {
-      const ai = PREF.indexOf(a.id), bi = PREF.indexOf(b.id);
-      if (ai === -1 && bi === -1) return a.label.localeCompare(b.label);
-      if (ai === -1) return 1; if (bi === -1) return -1;
-      return ai - bi;
-    });
-    return all;
-  }
-
-  async _callGemini(userPrompt, systemPrompt, history = []) {
-    const key = this._getGeminiKey();
-    if (!key) throw new Error('No API key set.');
-
-    const model = this._getGeminiModel();
-    if (!model) throw new Error('No model selected. Re-open the AI Tutor tab to connect again.');
-
-    // Convert chat history to Gemini format (role: 'user'|'model')
-    const contents = [
-      ...history.map(m => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }]
-      })),
-      { role: 'user', parts: [{ text: userPrompt }] }
-    ];
-
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents
-        })
-      }
-    );
-
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${resp.status}`);
-    }
-
-    const data = await resp.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
-  }
-
-  // ══════════════════════════════════════
-  // AI CHAT (right panel)
-  // ══════════════════════════════════════
-  _setAIStatus(state) {
-    const dot = document.querySelector('.ai-dot');
-    if (!dot) return;
-    dot.className = 'ai-dot' + (state === 'loading' ? ' loading' : state === 'error' ? ' error' : '');
-    const label = document.querySelector('.ai-status span:last-child');
-    if (label) {
-      label.textContent = state === 'loading' ? t('thinkingMsg') :
-                          state === 'error'   ? t('aiUnavailable') :
-                          t('poweredBy');
-    }
-  }
-
-  _renderKeySetup() {
-    const panel = document.getElementById('ai-chat-content');
-    if (!panel) return;
-    const existing = panel.querySelector('.key-setup');
-    if (existing) return;
-
-    const key = this._getGeminiKey();
-    const setup = document.createElement('div');
-    setup.className = 'key-setup';
-    setup.innerHTML = `
-      <div class="key-setup-icon">🤖</div>
-      <div class="key-setup-title">Connect AI Tutor</div>
-      <div class="key-setup-desc">Paste your <strong>free</strong> Google Gemini API key below.<br>Get one at <a class="key-link" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com</a> — no credit card needed.</div>
-      <input class="key-input" id="gemini-key-input" type="password" placeholder="AIzaSy..." value="${this._esc(key)}" spellcheck="false" />
-      <div id="model-row" style="display:none">
-        <div class="model-label">Available models for your key</div>
-        <select class="model-select" id="gemini-model-select"></select>
-      </div>
-      <button class="key-save-btn" id="key-save-btn">✓ Connect</button>
-      ${key ? '<button class="key-clear-btn" id="key-clear-btn">✕ Remove Key</button>' : ''}
-      <div id="key-status" class="key-note">🔒 Key stored only in your browser. Models are auto-detected from your account.</div>
-    `;
-    panel.insertBefore(setup, panel.firstChild);
-
-    const saveBtn = document.getElementById('key-save-btn');
-    const statusEl = document.getElementById('key-status');
-    const modelRow = document.getElementById('model-row');
-    const modelSel = document.getElementById('gemini-model-select');
-    let detectedModels = [];
-
-    saveBtn?.addEventListener('click', async () => {
-      const val = document.getElementById('gemini-key-input')?.value.trim();
-      if (!val) { statusEl.textContent = '⚠️ Paste your API key first.'; return; }
-
-      // If models not yet detected, detect first
-      if (!detectedModels.length) {
-        saveBtn.disabled = true;
-        saveBtn.textContent = '⟳ Detecting models…';
-        statusEl.textContent = '';
-        try {
-          detectedModels = await this._fetchAvailableModels(val);
-          if (!detectedModels.length) throw new Error('No generateContent-capable models found for this key.');
-
-          modelSel.innerHTML = detectedModels
-            .map((m, i) => `<option value="${m.id}" ${i === 0 ? 'selected' : ''}>${m.label}${i === 0 ? ' ✅' : ''}</option>`)
-            .join('');
-          modelRow.style.display = 'block';
-          saveBtn.textContent = '✓ Save & Connect';
-          saveBtn.disabled = false;
-          statusEl.textContent = `Found ${detectedModels.length} model(s). Top pick selected.`;
-        } catch(e) {
-          saveBtn.textContent = '✓ Connect';
-          saveBtn.disabled = false;
-          statusEl.innerHTML = `<span style="color:var(--accent-red)">Error: ${this._esc(e.message)}</span>`;
-        }
-        return;
-      }
-
-      // Second click: save
-      const sel = modelSel?.value || detectedModels[0]?.id || '';
-      if (!sel) return;
-      localStorage.setItem('gq_gemini_key', val);
-      localStorage.setItem('gq_gemini_model', sel);
-      setup.remove();
-      this._setAIStatus('online');
-      const msgs = document.getElementById('ai-chat-messages');
-      if (msgs) {
-        const note = document.createElement('div');
-        note.className = 'ai-msg assistant';
-        note.innerHTML = `<div class="msg-label">GitQuest AI</div>✅ Connected via <strong>${sel}</strong>. Ask me anything about Git!`;
-        msgs.appendChild(note);
-        msgs.scrollTop = msgs.scrollHeight;
-      }
-    });
-
-    document.getElementById('key-clear-btn')?.addEventListener('click', () => {
-      localStorage.removeItem('gq_gemini_key');
-      localStorage.removeItem('gq_gemini_model');
-      setup.remove();
-      this._renderKeySetup();
-    });
-  }
-
-  async _sendChat() {
-    const inp = document.getElementById('ai-input');
-    const btn = document.getElementById('ai-send');
-    const msgs = document.getElementById('ai-chat-messages');
-    if (!inp || !msgs) return;
-    const text = inp.value.trim();
-    if (!text) return;
-
-    if (!this._getGeminiKey()) {
-      this._renderKeySetup();
-      document.querySelectorAll('.panel-tab').forEach(x => x.classList.remove('active'));
-      document.querySelectorAll('.panel-content').forEach(x => x.classList.remove('active'));
-      document.querySelector('.panel-tab[data-tab="ai-chat"]')?.classList.add('active');
-      document.getElementById('ai-chat-content')?.classList.add('active');
-      return;
-    }
-
-    inp.value = '';
-    if (btn) btn.disabled = true;
-    this._setAIStatus('loading');
-
-    this.aiHistory.push({ role: 'user', content: text });
-    this._renderChat(msgs);
-
-    const loading = document.createElement('div');
-    loading.className = 'ai-msg assistant';
-    loading.innerHTML = `<div class="msg-label">${t('ai') || 'GitQuest AI'}</div><div class="ai-typing"><span></span><span></span><span></span></div>`;
-    msgs.appendChild(loading);
-    msgs.scrollTop = msgs.scrollHeight;
-
-    const state = this.engine.getState();
-    const langName = window.currentLang().name;
-    const sys = `You are an expert Git tutor inside GitQuest, an interactive Git learning platform. Respond in ${langName}.
-Current repo: branches=[${Object.keys(state.branches).join(', ')}], HEAD=${state.headBranch || 'detached HEAD'}.
-${this.currentChallenge ? `Active challenge: "${this.currentChallenge.name}" — ${this.currentChallenge.description}` : 'User is in sandbox mode (free exploration).'}
-Be concise (2-4 sentences max), use backtick code formatting for commands, be encouraging and specific. Never use markdown headers.`;
-
-    try {
-      // Pass all history except the last user message (already appended above)
-      const historyWithoutLast = this.aiHistory.slice(0, -1);
-      const reply = await this._callGemini(text, sys, historyWithoutLast);
-      this.aiHistory.push({ role: 'assistant', content: reply || 'No response received.' });
-      loading.remove();
-      this._renderChat(msgs);
-      this._setAIStatus('online');
-    } catch(e) {
-      loading.remove();
-      this.aiHistory.pop(); // remove the failed user message from history
-      const err = document.createElement('div');
-      err.className = 'ai-msg assistant';
-      err.innerHTML = `<div class="msg-label">GitQuest AI</div><span style="color:var(--accent-red)">Error: ${this._esc(e.message)}</span>`;
-      msgs.appendChild(err);
-      this._setAIStatus('error');
-      if (e.message.includes('API_KEY') || e.message.includes('400') || e.message.includes('401')) {
-        this._renderKeySetup();
-      }
-    }
-
-    if (btn) btn.disabled = false;
-    msgs.scrollTop = msgs.scrollHeight;
-  }
-
-  _renderChat(container) {
-    container.innerHTML = this.aiHistory.map(m => `
-      <div class="ai-msg ${m.role}">
-        <div class="msg-label">${m.role === 'user' ? (t('you') || 'You') : (t('ai') || 'GitQuest AI')}</div>
-        ${this._fmtAI(m.content)}
-      </div>`).join('');
-    container.scrollTop = container.scrollHeight;
-  }
-
-  _fmtAI(text) {
-    return this._esc(text)
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/\n/g, '<br>');
-  }
-
-  // ══════════════════════════════════════
   // MOBILE / RESPONSIVE
   // ══════════════════════════════════════
   _bindMobileNav() {
@@ -1345,13 +1040,6 @@ Be concise (2-4 sentences max), use backtick code formatting for commands, be en
         document.querySelectorAll('.panel-content').forEach(c => c.classList.remove('active'));
         document.querySelector('.panel-tab[data-tab="mission"]')?.classList.add('active');
         document.getElementById('mission-content')?.classList.add('active');
-        break;
-      case 'ai':
-        rightPanel?.classList.add('open');
-        document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.panel-content').forEach(c => c.classList.remove('active'));
-        document.querySelector('.panel-tab[data-tab="ai-chat"]')?.classList.add('active');
-        document.getElementById('ai-chat-content')?.classList.add('active');
         break;
     }
   }
