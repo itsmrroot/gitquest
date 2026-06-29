@@ -199,46 +199,65 @@ class GraphRenderer {
     }
 
     // Draw branch labels (above nodes) — stack multiple labels per commit
-    // Group branches by the commit they point to
     const branchesByCommit = {};
     for (const [bname, bid] of Object.entries(branches)) {
       if (!pos[bid]) continue;
       if (!branchesByCommit[bid]) branchesByCommit[bid] = [];
-      // Put active branch first so it renders at the bottom (closest to node)
       if (bname === headBranch) branchesByCommit[bid].unshift(bname);
       else branchesByCommit[bid].push(bname);
     }
 
-    const LABEL_H = 16; // height of each label pill
-    const LABEL_GAP = 2; // gap between stacked pills
+    const NODE_R  = 8;   // circle radius
+    const LABEL_H = 16;  // pill height
+    const LABEL_GAP = 3; // gap between stacked pills
+    const STEM_GAP = 6;  // gap between node top and first label bottom
+
+    // Read panel background from CSS so inactive pills can mask edge lines
+    const panelBg = getComputedStyle(document.documentElement)
+      .getPropertyValue('--bg-panel').trim() || '#161b22';
 
     for (const [bid, names] of Object.entries(branchesByCommit)) {
       const p = pos[bid];
-      // Draw from bottom (closest to node) upward
+      const activeColor = this._branchColor(names[0]); // active branch is always first
+
+      // Draw centered stem line: from node top up to bottom of lowest label
+      const stemBottom = p.y - NODE_R;
+      const stemTop    = p.y - NODE_R - STEM_GAP;
+      const stem = document.createElementNS(ns, 'line');
+      stem.setAttribute('x1', p.x); stem.setAttribute('y1', stemBottom);
+      stem.setAttribute('x2', p.x); stem.setAttribute('y2', stemTop);
+      stem.setAttribute('stroke', activeColor);
+      stem.setAttribute('stroke-width', '1.5');
+      root.appendChild(stem);
+
+      // Draw each label pill, bottom-to-top (i=0 closest to node)
       for (let i = 0; i < names.length; i++) {
         const bname = names[i];
         const isActive = bname === headBranch;
         const color = this._branchColor(bname);
         const labelText = isActive ? `● ${bname}` : bname;
-        const charW = 6.5;
-        const w = Math.max(labelText.length * charW + 14, 28);
-        // i=0 is closest to the node, i=1 is above it, etc.
-        const bottomY = p.y - 18 - i * (LABEL_H + LABEL_GAP);
+        const w = Math.max(labelText.length * 6.5 + 16, 32);
+
+        // labelBottom = top-of-node minus stem gap minus stacking offset
+        const labelBottom = p.y - NODE_R - STEM_GAP - i * (LABEL_H + LABEL_GAP);
+        const rectY = labelBottom - LABEL_H;
+        const textY = labelBottom - LABEL_H / 2 + 3.5; // vertical center + baseline offset
 
         const rect = document.createElementNS(ns, 'rect');
         rect.setAttribute('x', p.x - w / 2);
-        rect.setAttribute('y', bottomY - LABEL_H + 4);
+        rect.setAttribute('y', rectY);
         rect.setAttribute('width', w);
         rect.setAttribute('height', LABEL_H);
         rect.setAttribute('rx', '4');
-        rect.setAttribute('fill', isActive ? color : 'transparent');
+        // Solid background on ALL pills so they mask the graph edge behind them
+        rect.setAttribute('fill', isActive ? color : panelBg);
         rect.setAttribute('stroke', color);
         rect.setAttribute('stroke-width', '1.5');
         root.appendChild(rect);
 
         const lbl = document.createElementNS(ns, 'text');
         lbl.setAttribute('x', p.x);
-        lbl.setAttribute('y', bottomY - 2);
+        lbl.setAttribute('y', textY);
         lbl.setAttribute('text-anchor', 'middle');
         lbl.setAttribute('fill', isActive ? '#0d1117' : color);
         lbl.setAttribute('font-size', '9');
