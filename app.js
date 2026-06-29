@@ -1,6 +1,6 @@
 // =============================================
 // GitQuest — js/app.js
-// Main application controller (with i18n + theme)
+// Main application controller
 // =============================================
 
 class GitQuestApp {
@@ -18,6 +18,7 @@ class GitQuestApp {
     this.hintIdx = 0;
     this.cmdsThisChallenge = [];
     this.setupCommitCount = 0;
+    this.undoStack = []; // stores snapshots for undo
   }
 
   init() {
@@ -71,10 +72,8 @@ class GitQuestApp {
   _initLang() {
     const dropdown = document.getElementById('lang-dropdown');
     if (!dropdown) return;
-
     const currentCode = localStorage.getItem('gq_lang') || 'en';
     dropdown.innerHTML = '';
-
     Object.entries(LANGUAGES).forEach(([code, lang]) => {
       const opt = document.createElement('div');
       opt.className = 'lang-option' + (code === currentCode ? ' active' : '');
@@ -86,11 +85,9 @@ class GitQuestApp {
       });
       dropdown.appendChild(opt);
     });
-
     this._updateLangBtn(currentCode);
     document.documentElement.dir = (LANGUAGES[currentCode]?.dir) || 'ltr';
     document.documentElement.lang = currentCode;
-
     document.getElementById('lang-current-btn')?.addEventListener('click', (e) => {
       e.stopPropagation();
       document.getElementById('lang-picker')?.classList.toggle('open');
@@ -105,18 +102,12 @@ class GitQuestApp {
     this._updateLangBtn(code);
     document.documentElement.dir = (LANGUAGES[code]?.dir) || 'ltr';
     document.documentElement.lang = code;
-
     document.querySelectorAll('.lang-option').forEach((opt, i) => {
       opt.classList.toggle('active', Object.keys(LANGUAGES)[i] === code);
     });
-
     this._applyI18n();
-
-    if (this.currentChallenge) {
-      this._renderMission(this.currentChallenge);
-    } else if (this.mode === 'sandbox') {
-      this._renderSandboxPanel();
-    }
+    if (this.currentChallenge) this._renderMission(this.currentChallenge);
+    else if (this.mode === 'sandbox') this._renderSandboxPanel();
   }
 
   _updateLangBtn(code) {
@@ -129,16 +120,13 @@ class GitQuestApp {
 
   _applyI18n() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
-      const key = el.getAttribute('data-i18n');
-      const val = t(key);
+      const val = t(el.getAttribute('data-i18n'));
       if (val) el.textContent = val;
     });
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-      const key = el.getAttribute('data-i18n-placeholder');
-      const val = t(key);
+      const val = t(el.getAttribute('data-i18n-placeholder'));
       if (val) el.placeholder = val;
     });
-    // Quick question buttons
     document.querySelectorAll('.quick-q').forEach(btn => {
       const qi = btn.getAttribute('data-qi');
       const qf = btn.getAttribute('data-qf');
@@ -158,7 +146,6 @@ class GitQuestApp {
     const el = document.getElementById('challenge-list');
     if (!el) return;
     el.innerHTML = '';
-
     TIERS.forEach(tier => {
       const done = tier.challenges.filter(c => this.completedChallenges.includes(c.id)).length;
       const pct = Math.round(done / tier.challenges.length * 100);
@@ -175,7 +162,6 @@ class GitQuestApp {
 
       const list = document.createElement('div');
       list.style.padding = '0 8px 8px';
-
       tier.challenges.forEach((ch, idx) => {
         const isCompleted = this.completedChallenges.includes(ch.id);
         const prevDone = idx === 0 || this.completedChallenges.includes(tier.challenges[idx - 1].id);
@@ -187,7 +173,6 @@ class GitQuestApp {
           (isCompleted ? ' completed' : '') +
           (isLocked ? ' locked' : '') +
           (isActive ? ' active' : '');
-
         const dotClass = isCompleted ? 'done' : isActive ? 'current' : '';
         item.innerHTML = `
           <div class="challenge-dot ${dotClass}"></div>
@@ -195,12 +180,10 @@ class GitQuestApp {
             <div class="challenge-name">${ch.name}</div>
             <div class="challenge-meta">${ch.difficulty}${isLocked ? ' 🔒' : ''}</div>
           </div>
-          <div class="challenge-xp">+${ch.xp}XP</div>
-        `;
+          <div class="challenge-xp">+${ch.xp}XP</div>`;
         if (!isLocked) item.addEventListener('click', () => this._loadChallenge(tier, ch));
         list.appendChild(item);
       });
-
       el.appendChild(list);
     });
   }
@@ -208,11 +191,20 @@ class GitQuestApp {
   // ══════════════════════════════════════
   // CHALLENGE
   // ══════════════════════════════════════
-  _loadChallenge(tier, challenge) {
+  _loadChallenge(tier, challenge, skipIntro) {
+    // Show intro first (unless skipIntro=true or already seen)
+    const seen = JSON.parse(localStorage.getItem('gq_seen_intros') || '[]');
+    if (!skipIntro && !seen.includes(challenge.id)) {
+      this._pendingChallenge = { tier, challenge };
+      this._showIntro(tier, challenge);
+      return;
+    }
+
     this.currentChallenge = challenge;
     this.currentTier = tier;
     this.cmdsThisChallenge = [];
     this.hintIdx = 0;
+    this.undoStack = [];
 
     this.engine.reset();
     this.setupCommitCount = 0;
@@ -228,44 +220,175 @@ class GitQuestApp {
     if (out) out.innerHTML = '';
     this._log('info', `▶ ${challenge.name}`);
     this._focusInput();
+
+    // Close any open modals
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show'));
+  }
+
+  // ══════════════════════════════════════
+  // INTRO DIALOG (learnGitBranching style)
+  // ══════════════════════════════════════
+  _showIntro(tier, challenge) {
+    const modal = document.getElementById('modal-intro');
+    if (!modal) { this._loadChallenge(tier, challenge, true); return; }
+
+    const intro = (window.CHALLENGE_INTROS || {})[challenge.id];
+    const diffColors = {
+      beginner: { bg: 'rgba(57,211,83,0.12)', color: 'var(--accent)' },
+      easy:     { bg: 'rgba(88,166,255,0.12)', color: 'var(--accent-blue)' },
+      medium:   { bg: 'rgba(240,136,62,0.12)', color: 'var(--accent-orange)' },
+      hard:     { bg: 'rgba(248,81,73,0.12)', color: 'var(--accent-red)' },
+      expert:   { bg: 'rgba(188,140,255,0.12)', color: 'var(--accent-purple)' }
+    };
+    const dc = diffColors[challenge.difficulty] || diffColors.beginner;
+
+    // Header
+    const tierEl = document.getElementById('intro-tier');
+    const titleEl = document.getElementById('intro-title');
+    if (tierEl) tierEl.textContent = tier.name;
+    if (titleEl) titleEl.textContent = challenge.name;
+
+    // Difficulty badge
+    const diffEl = document.getElementById('intro-diff');
+    if (diffEl) {
+      diffEl.textContent = '● ' + challenge.difficulty + ' · ' + challenge.xp + ' XP';
+      diffEl.style.background = dc.bg;
+      diffEl.style.color = dc.color;
+    }
+
+    // Body
+    const body = document.getElementById('intro-body');
+    if (body) {
+      let html = '';
+
+      if (intro?.whatYouLearn) {
+        html += `<div class="intro-what-you-learn">
+          <strong>📚 What you'll learn</strong>
+          ${intro.whatYouLearn}
+        </div>`;
+      }
+
+      if (intro?.description) {
+        html += `<div class="intro-description">${intro.description}</div>`;
+      } else {
+        html += `<div class="intro-description">${challenge.description}</div>`;
+      }
+
+      if (intro?.prereqs) {
+        html += `<div class="intro-prereqs">
+          <strong>📋 Prerequisites</strong>
+          ${intro.prereqs}
+        </div>`;
+      }
+
+      if (intro?.firstHint) {
+        html += `<div class="intro-first-hint">
+          <strong>💡 First step hint</strong>
+          ${intro.firstHint}
+        </div>`;
+      }
+
+      if (intro?.tip) {
+        html += `<div class="intro-first-hint" style="border-color:rgba(88,166,255,0.25);background:rgba(88,166,255,0.07);color:var(--accent-blue)">
+          <strong>⚡ Pro tip</strong>
+          ${intro.tip}
+        </div>`;
+      }
+
+      html += `<div class="intro-goals-preview">
+        <div class="intro-goals-title">🎯 Your objectives</div>
+        ${challenge.goals.map((g, i) => `
+          <div class="intro-goal-row">
+            <div class="intro-goal-num">${i+1}</div>
+            <span>${g.text}</span>
+          </div>`).join('')}
+      </div>`;
+
+      body.innerHTML = html;
+    }
+
+    // Wire Start button
+    const startBtn = document.getElementById('intro-start');
+    if (startBtn) {
+      startBtn.onclick = () => {
+        // Mark as seen
+        const seen = JSON.parse(localStorage.getItem('gq_seen_intros') || '[]');
+        if (!seen.includes(challenge.id)) {
+          seen.push(challenge.id);
+          localStorage.setItem('gq_seen_intros', JSON.stringify(seen));
+        }
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+        this._loadChallenge(tier, challenge, true);
+      };
+    }
+
+    // Close button
+    document.getElementById('intro-close').onclick = () => {
+      modal.style.display = 'none';
+      modal.classList.remove('show');
+    };
+
+    // Prev/Next navigation
+    const allChallenges = [];
+    TIERS.forEach(t => t.challenges.forEach(c => allChallenges.push({ tier: t, challenge: c })));
+    const curIdx = allChallenges.findIndex(x => x.challenge.id === challenge.id);
+
+    const prevBtn = document.getElementById('intro-prev');
+    const nextBtn = document.getElementById('intro-next');
+    if (prevBtn) {
+      prevBtn.disabled = curIdx <= 0;
+      prevBtn.onclick = () => {
+        if (curIdx > 0) {
+          const prev = allChallenges[curIdx - 1];
+          this._pendingChallenge = prev;
+          this._showIntro(prev.tier, prev.challenge);
+        }
+      };
+    }
+    if (nextBtn) {
+      nextBtn.disabled = curIdx >= allChallenges.length - 1;
+      nextBtn.onclick = () => {
+        if (curIdx < allChallenges.length - 1) {
+          const next = allChallenges[curIdx + 1];
+          this._pendingChallenge = next;
+          this._showIntro(next.tier, next.challenge);
+        }
+      };
+    }
+
+    modal.style.display = 'flex';
+    modal.classList.add('show');
   }
 
   _renderMission(ch) {
     const panel = document.getElementById('mission-content');
     if (!panel) return;
-
     const diffClass = {
       beginner: 'diff-beginner', easy: 'diff-easy', medium: 'diff-medium',
       hard: 'diff-hard', expert: 'diff-expert'
     }[ch.difficulty] || 'diff-beginner';
-
-    const hintLabel = t('showHint') || '💡 Show Hint';
-    const askLabel = t('askAI') || '✨ Ask AI Tutor';
-    const objLabel = t('objectives') || '🎯 Objectives';
-    const conceptLabel = t('concept') || 'Concept';
 
     panel.innerHTML = `
       <div class="mission-title">${ch.name}</div>
       <div class="mission-difficulty ${diffClass}">● ${ch.difficulty} · ${ch.xp} XP</div>
       <p class="mission-desc">${ch.description}</p>
       <div class="mission-goal">
-        <div class="mission-goal-title">${objLabel}</div>
+        <div class="mission-goal-title">${t('objectives') || '🎯 Objectives'}</div>
         ${ch.goals.map(g => `
           <div class="goal-item" id="goal-${g.id}">
             <div class="goal-check" id="check-${g.id}"></div>
             <span>${g.text}</span>
-          </div>
-        `).join('')}
+          </div>`).join('')}
       </div>
-      ${ch.concept ? `<div class="concept-box">💡 <strong>${conceptLabel}:</strong> ${ch.concept}</div>` : ''}
-      <button class="hint-btn" id="hint-btn-main">${hintLabel} (${ch.hints?.length || 0})</button>
+      ${ch.concept ? `<div class="concept-box">💡 <strong>${t('concept') || 'Concept'}:</strong> ${ch.concept}</div>` : ''}
+      <button class="hint-btn" id="hint-btn-main">${t('showHint') || '💡 Show Hint'} (${ch.hints?.length || 0})</button>
       <div class="hint-box" id="hint-box"></div>
-      <button class="ask-ai-btn" id="ask-ai-btn-main">${askLabel}</button>
+      <button class="ask-ai-btn" id="ask-ai-btn-main">${t('askAI') || '✨ Ask AI Tutor'}</button>
       <div class="ai-response" id="mission-ai"></div>
     `;
-
     document.getElementById('hint-btn-main')?.addEventListener('click', () => this._showHint());
-    document.getElementById('ask-ai-btn-main')?.addEventListener('click', () => this._askAI());
+    document.getElementById('ask-ai-btn-main')?.addEventListener('click', () => this._askAIInline());
   }
 
   _showHint() {
@@ -278,22 +401,23 @@ class GitQuestApp {
     this.hintIdx++;
   }
 
-  async _askAI() {
+  // Inline AI in mission panel
+  async _askAIInline() {
     const ch = this.currentChallenge;
     if (!ch) return;
     const box = document.getElementById('mission-ai');
     if (!box) return;
     box.style.display = 'block';
-    box.textContent = t('thinkingMsg') || 'Thinking...';
+    box.innerHTML = '<div class="ai-typing"><span></span><span></span><span></span></div>';
 
     const state = this.engine.getState();
     const langName = window.currentLang().name;
-    const prompt = `You are a Git expert tutor inside GitQuest, an interactive learning app. Respond in ${langName}.
+    const prompt = `You are a Git expert tutor inside GitQuest. Respond in ${langName}.
 Challenge: "${ch.name}" — ${ch.description}
 Goals: ${ch.goals.map(g => g.text).join('; ')}
-Student commands so far: ${this.cmdsThisChallenge.slice(-5).join(', ') || 'none'}
+Student commands: ${this.cmdsThisChallenge.slice(-5).join(', ') || 'none yet'}
 Branches: ${Object.keys(state.branches).join(', ')} | HEAD: ${state.headBranch || 'detached'}
-Give a helpful 3-sentence explanation in ${langName}. Use backtick code formatting. End with one concrete command to try.`;
+Give a helpful 3-sentence explanation. Use backtick code formatting. End with one concrete command to try next.`;
 
     try {
       const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -309,16 +433,164 @@ Give a helpful 3-sentence explanation in ${langName}. Use backtick code formatti
         })
       });
       const data = await resp.json();
-      box.textContent = data.content?.find(b => b.type === 'text')?.text || 'No response.';
-    } catch (e) {
-      box.textContent = t('aiUnavailable') || 'AI unavailable.';
+      const text = data.content?.find(b => b.type === 'text')?.text || 'No response.';
+      box.textContent = text;
+    } catch(e) {
+      box.textContent = t('aiUnavailable') || 'AI unavailable. Check your connection.';
     }
+  }
+
+  // ══════════════════════════════════════
+  // TOOLBAR
+  // ══════════════════════════════════════
+  _bindToolbar() {
+    document.getElementById('tool-levels')?.addEventListener('click', () => {
+      // Scroll sidebar into view / toggle
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar) sidebar.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    document.getElementById('tool-objective')?.addEventListener('click', () => {
+      this._showObjective();
+    });
+
+    document.getElementById('tool-solution')?.addEventListener('click', () => {
+      this._showSolution();
+    });
+
+    document.getElementById('tool-undo')?.addEventListener('click', () => {
+      this._undoCmd();
+    });
+
+    document.getElementById('tool-reset')?.addEventListener('click', () => {
+      if (this.currentChallenge) this._loadChallenge(this.currentTier, this.currentChallenge);
+      else {
+        this.engine.reset(); this.renderer?.render();
+        const out = document.getElementById('terminal-output');
+        if (out) out.innerHTML = '';
+        this._log('info', t('repoReset'));
+      }
+    });
+
+    document.getElementById('tool-help')?.addEventListener('click', () => {
+      document.getElementById('modal-help')?.classList.add('show');
+    });
+
+    // Close modals on overlay click
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.classList.remove('show');
+      });
+    });
+  }
+
+  _showObjective() {
+    const ch = this.currentChallenge;
+    const modal = document.getElementById('modal-objective');
+    const content = document.getElementById('objective-content');
+    if (!modal || !content) return;
+
+    if (!ch) {
+      content.innerHTML = `<div style="color:var(--text-muted);text-align:center;padding:20px">Select a challenge first.</div>`;
+    } else {
+      content.innerHTML = `
+        <div class="objective-desc">${ch.description}</div>
+        <div class="objective-goals">
+          ${ch.goals.map((g, i) => {
+            const state = this.engine.getState();
+            let passed = false;
+            try { passed = g.check(state, this.cmdsThisChallenge, this.setupCommitCount); } catch(e){}
+            return `
+              <div class="objective-goal-item">
+                <div class="obj-num" style="${passed ? 'background:var(--accent);color:#000;border-color:var(--accent)' : ''}">${passed ? '✓' : i+1}</div>
+                <span style="${passed ? 'color:var(--accent)' : ''}">${g.text}</span>
+              </div>`;
+          }).join('')}
+        </div>
+        ${ch.concept ? `<div class="concept-callout">💡 <strong>Key concept:</strong> ${ch.concept}</div>` : ''}
+      `;
+    }
+    modal.classList.add('show');
+  }
+
+  _showSolution() {
+    const ch = this.currentChallenge;
+    const modal = document.getElementById('modal-solution');
+    const content = document.getElementById('solution-content');
+    if (!modal || !content) return;
+
+    if (!ch) {
+      content.innerHTML = `<div style="color:var(--text-muted);text-align:center;padding:20px">Select a challenge first.</div>`;
+    } else {
+      const steps = ch.hints || [];
+      content.innerHTML = `
+        <div class="solution-warn">⚠️ Try solving it yourself first! Solutions are here to help if you're stuck.</div>
+        <div class="solution-steps">
+          ${steps.map((hint, i) => `
+            <div class="solution-step" onclick="window.app._pasteCmd('${hint.replace(/'/g,"\\'")}')">
+              <span class="step-num">${i+1}</span>
+              <span class="step-cmd">${this._esc(hint)}</span>
+              <span class="step-copy">Click to paste ↗</span>
+            </div>`).join('')}
+        </div>
+        <div class="solution-footer">Click any step to paste it into the terminal</div>
+      `;
+    }
+    modal.classList.add('show');
+  }
+
+  _pasteCmd(cmd) {
+    const inp = document.getElementById('cmd-input');
+    if (inp) {
+      inp.value = cmd;
+      inp.focus();
+    }
+    document.getElementById('modal-solution')?.classList.remove('show');
+  }
+
+  _undoCmd() {
+    if (this.undoStack.length === 0) {
+      this._log('err', 'Nothing to undo.');
+      return;
+    }
+    const snapshot = this.undoStack.pop();
+    // Restore engine state
+    this.engine.commits = snapshot.commits;
+    this.engine.branches = snapshot.branches;
+    this.engine.HEAD = snapshot.HEAD;
+    this.engine.headBranch = snapshot.headBranch;
+    this.engine.tags = snapshot.tags;
+    this.engine.staging = snapshot.staging;
+    this.renderer?.render();
+
+    // Remove last command from challenge history
+    this.cmdsThisChallenge.pop();
+    this._log('info', '↩ Undid last command.');
+
+    const pl = document.getElementById('prompt-branch');
+    if (pl) pl.textContent = this.engine.headBranch || '(detached)';
+  }
+
+  _saveSnapshot() {
+    // Deep copy current engine state
+    this.undoStack.push({
+      commits: JSON.parse(JSON.stringify(this.engine.commits)),
+      branches: { ...this.engine.branches },
+      HEAD: this.engine.HEAD,
+      headBranch: this.engine.headBranch,
+      tags: { ...this.engine.tags },
+      staging: [...this.engine.staging]
+    });
+    // Cap undo stack at 20
+    if (this.undoStack.length > 20) this.undoStack.shift();
   }
 
   // ══════════════════════════════════════
   // EVENTS
   // ══════════════════════════════════════
   _bindEvents() {
+    this._bindToolbar();
+
     const input = document.getElementById('cmd-input');
     if (!input) return;
 
@@ -351,7 +623,6 @@ Give a helpful 3-sentence explanation in ${langName}. Use backtick code formatti
 
     input.addEventListener('input', () => this._showAC(input.value));
 
-    // Mode tabs
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -361,7 +632,6 @@ Give a helpful 3-sentence explanation in ${langName}. Use backtick code formatti
       });
     });
 
-    // Panel tabs
     document.querySelectorAll('.panel-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         const target = tab.dataset.tab;
@@ -400,6 +670,9 @@ Give a helpful 3-sentence explanation in ${langName}. Use backtick code formatti
     const input = raw.trim();
     if (!input) return;
 
+    // Save snapshot before executing (for undo)
+    this._saveSnapshot();
+
     this.cmdHistory.push(input);
     this.histIdx = -1;
     this.cmdsThisChallenge.push(input);
@@ -428,7 +701,7 @@ Give a helpful 3-sentence explanation in ${langName}. Use backtick code formatti
 
     ch.goals.forEach(goal => {
       let passed = false;
-      try { passed = goal.check(state, history, this.setupCommitCount); } catch (e) { }
+      try { passed = goal.check(state, history, this.setupCommitCount); } catch(e){}
       const chk = document.getElementById(`check-${goal.id}`);
       if (chk) {
         if (passed) { chk.classList.add('done'); chk.textContent = '✓'; }
@@ -460,7 +733,6 @@ Give a helpful 3-sentence explanation in ${langName}. Use backtick code formatti
     overlay.querySelector('.next-btn').textContent = t('nextChallenge');
     overlay.querySelector('.retry-btn').textContent = t('keepExploring');
     overlay.classList.add('show');
-
     overlay.querySelector('.next-btn').onclick = () => {
       overlay.classList.remove('show');
       this._nextChallenge();
@@ -497,7 +769,7 @@ Give a helpful 3-sentence explanation in ${langName}. Use backtick code formatti
       <div style="text-align:center;padding:50px 20px;color:var(--text-muted)">
         <div style="font-size:48px;margin-bottom:12px">🏖️</div>
         <div style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:8px">${t('sandboxTitle')}</div>
-        <div style="font-size:13px;line-height:1.7">${(t('sandboxDesc') || '').replace(/\n/g, '<br>')}</div>
+        <div style="font-size:13px;line-height:1.7">${(t('sandboxDesc') || '').replace(/\n/g,'<br>')}</div>
       </div>`;
   }
 
@@ -544,7 +816,7 @@ Give a helpful 3-sentence explanation in ${langName}. Use backtick code formatti
   }
 
   _esc(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   // ══════════════════════════════════════
@@ -597,7 +869,6 @@ Give a helpful 3-sentence explanation in ${langName}. Use backtick code formatti
         this._hideAC();
       });
     });
-
     ac.style.display = 'block';
   }
 
@@ -611,8 +882,20 @@ Give a helpful 3-sentence explanation in ${langName}. Use backtick code formatti
   }
 
   // ══════════════════════════════════════
-  // AI CHAT
+  // AI CHAT (right panel)
   // ══════════════════════════════════════
+  _setAIStatus(state) {
+    const dot = document.querySelector('.ai-dot');
+    if (!dot) return;
+    dot.className = 'ai-dot' + (state === 'loading' ? ' loading' : state === 'error' ? ' error' : '');
+    const label = document.querySelector('.ai-status span:last-child');
+    if (label) {
+      label.textContent = state === 'loading' ? 'Thinking...' :
+                          state === 'error'   ? 'Connection error' :
+                          'GitQuest AI — powered by Claude';
+    }
+  }
+
   async _sendChat() {
     const inp = document.getElementById('ai-input');
     const btn = document.getElementById('ai-send');
@@ -623,21 +906,26 @@ Give a helpful 3-sentence explanation in ${langName}. Use backtick code formatti
 
     inp.value = '';
     if (btn) btn.disabled = true;
+    this._setAIStatus('loading');
+
     this.aiHistory.push({ role: 'user', content: text });
     this._renderChat(msgs);
 
+    // Typing indicator
     const loading = document.createElement('div');
     loading.className = 'ai-msg assistant';
-    loading.innerHTML = `<div class="msg-label">${t('ai') || 'GitQuest AI'}</div><span style="opacity:0.5">${t('thinkingMsg') || 'Thinking...'}</span>`;
+    loading.innerHTML = `
+      <div class="msg-label">${t('ai') || 'GitQuest AI'}</div>
+      <div class="ai-typing"><span></span><span></span><span></span></div>`;
     msgs.appendChild(loading);
     msgs.scrollTop = msgs.scrollHeight;
 
     const state = this.engine.getState();
     const langName = window.currentLang().name;
-    const sys = `You are an expert Git tutor in GitQuest. Respond in ${langName}.
-Repo state: branches=${Object.keys(state.branches).join(',')}, HEAD=${state.headBranch || 'detached'}.
-${this.currentChallenge ? `Challenge: "${this.currentChallenge.name}"` : 'Sandbox mode.'}
-Be concise (2-4 sentences), use \`code\` backtick formatting, be encouraging and specific.`;
+    const sys = `You are an expert Git tutor inside GitQuest, an interactive Git learning platform. Respond in ${langName}.
+Current repo: branches=[${Object.keys(state.branches).join(', ')}], HEAD=${state.headBranch || 'detached HEAD'}.
+${this.currentChallenge ? `Active challenge: "${this.currentChallenge.name}" — ${this.currentChallenge.description}` : 'User is in sandbox mode (free exploration).'}
+Be concise (2-4 sentences max), use \`backtick\` code formatting for commands, be encouraging and specific. Never use markdown headers.`;
 
     try {
       const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -648,22 +936,30 @@ Be concise (2-4 sentences), use \`code\` backtick formatting, be encouraging and
           'anthropic-dangerous-direct-browser-access': 'true'
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6', max_tokens: 1000,
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1000,
           system: sys,
           messages: this.aiHistory
         })
       });
+
+      if (!resp.ok) {
+        throw new Error(`API error: ${resp.status}`);
+      }
+
       const data = await resp.json();
-      const reply = data.content?.find(b => b.type === 'text')?.text || 'No response.';
+      const reply = data.content?.find(b => b.type === 'text')?.text || 'No response received.';
       this.aiHistory.push({ role: 'assistant', content: reply });
       loading.remove();
       this._renderChat(msgs);
-    } catch (e) {
+      this._setAIStatus('online');
+    } catch(e) {
       loading.remove();
       const err = document.createElement('div');
       err.className = 'ai-msg assistant';
-      err.textContent = t('aiUnavailable') || 'AI unavailable.';
+      err.innerHTML = `<div class="msg-label">${t('ai') || 'GitQuest AI'}</div>${t('aiUnavailable') || 'AI unavailable. Check your connection.'}`;
       msgs.appendChild(err);
+      this._setAIStatus('error');
     }
 
     if (btn) btn.disabled = false;
@@ -676,6 +972,7 @@ Be concise (2-4 sentences), use \`code\` backtick formatting, be encouraging and
         <div class="msg-label">${m.role === 'user' ? (t('you') || 'You') : (t('ai') || 'GitQuest AI')}</div>
         ${this._fmtAI(m.content)}
       </div>`).join('');
+    container.scrollTop = container.scrollHeight;
   }
 
   _fmtAI(text) {

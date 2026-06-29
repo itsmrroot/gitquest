@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="css/style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2339d353'/><text y='24' x='4' font-size='20' fill='black'>⎇</text></svg>" />
 </head>
 <body>
@@ -29,23 +29,42 @@
     <div class="header-right">
       <div class="xp-badge">⚡ <span id="xp-count">0 XP</span></div>
       <div class="level-badge" id="level-badge">Rookie</div>
-
-      <!-- Language Picker -->
       <div class="lang-picker" id="lang-picker">
         <button class="lang-current" id="lang-current-btn" aria-label="Change language">
           <span id="lang-flag">🇬🇧</span>
           <span id="lang-name">EN</span>
           <span class="arrow">▾</span>
         </button>
-        <div class="lang-dropdown" id="lang-dropdown">
-          <!-- populated by JS -->
-        </div>
+        <div class="lang-dropdown" id="lang-dropdown"></div>
       </div>
-
-      <!-- Theme Toggle -->
-      <button class="theme-toggle" id="theme-toggle" title="Toggle dark/light mode" aria-label="Toggle theme">🌙</button>
+      <button class="theme-toggle" id="theme-toggle" title="Toggle dark/light mode">🌙</button>
     </div>
   </header>
+
+  <!-- ── TOOLBAR (learnGitBranching-style) ── -->
+  <div id="toolbar">
+    <button class="tool-btn" id="tool-levels" title="Browse all challenges">
+      <span class="tool-icon">☰</span> <span data-i18n="challenges">Levels</span>
+    </button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" id="tool-objective" title="Show goal state">
+      <span class="tool-icon">🎯</span> <span>Objective</span>
+    </button>
+    <button class="tool-btn" id="tool-solution" title="Show solution hint">
+      <span class="tool-icon">💡</span> <span>Solution</span>
+    </button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" id="tool-undo" title="Undo last command">
+      <span class="tool-icon">↩</span> <span>Undo</span>
+    </button>
+    <button class="tool-btn" id="tool-reset" title="Reset challenge">
+      <span class="tool-icon">⟳</span> <span>Reset</span>
+    </button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" id="tool-help" title="Show help">
+      <span class="tool-icon">?</span> <span>Help</span>
+    </button>
+  </div>
 
   <!-- ── LEFT SIDEBAR ── -->
   <aside id="sidebar">
@@ -57,7 +76,6 @@
 
   <!-- ── MAIN ── -->
   <main id="main">
-
     <div id="graph-area">
       <svg id="git-canvas" xmlns="http://www.w3.org/2000/svg"></svg>
       <div class="canvas-hint" data-i18n="draghint">Drag to pan · Hover commits for details</div>
@@ -85,7 +103,6 @@
         <input type="text" id="cmd-input" placeholder='git commit -m "My first commit"' autocomplete="off" spellcheck="false" />
       </div>
     </div>
-
   </main>
 
   <!-- ── RIGHT PANEL ── -->
@@ -96,12 +113,10 @@
       <div class="panel-tab" data-tab="ai-chat" data-i18n="aiTutor">AI Tutor</div>
     </div>
 
-    <!-- Mission -->
     <div class="panel-content active" id="mission-content">
-      <div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:40px" data-i18n="loadingChallenge">Loading challenge...</div>
+      <div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:40px">Loading challenge...</div>
     </div>
 
-    <!-- Cheatsheet -->
     <div class="panel-content" id="cheatsheet-content">
       <div class="cheat-group">
         <div class="cheat-group-title">📸 Saving Work</div>
@@ -151,8 +166,14 @@
 
     <!-- AI Chat -->
     <div class="panel-content" id="ai-chat-content">
+      <div class="ai-chat-header">
+        <div class="ai-status" id="ai-status">
+          <span class="ai-dot"></span>
+          <span>GitQuest AI — powered by Claude</span>
+        </div>
+      </div>
       <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:12px" data-i18n="aiContext">
-        Ask anything about Git. The AI tutor knows your current challenge and repo state.
+        Ask anything about Git. I know your current challenge and repo state.
       </p>
       <div class="ai-chat-msgs" id="ai-chat-messages"></div>
       <div class="ai-input-row">
@@ -167,8 +188,68 @@
         <button class="hint-btn quick-q" data-qi="q4" data-qf="q4full"></button>
       </div>
     </div>
-
   </aside>
+</div>
+
+<!-- ── MODALS ── -->
+
+<!-- Objective Modal (Goal State) -->
+<div id="modal-objective" class="modal-overlay">
+  <div class="modal-card" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title">🎯 Goal State</span>
+      <button class="modal-close" onclick="document.getElementById('modal-objective').classList.remove('show')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="objective-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Solution Modal -->
+<div id="modal-solution" class="modal-overlay">
+  <div class="modal-card" style="max-width:480px">
+    <div class="modal-header">
+      <span class="modal-title">💡 Solution</span>
+      <button class="modal-close" onclick="document.getElementById('modal-solution').classList.remove('show')">✕</button>
+    </div>
+    <div class="modal-body" id="solution-content"></div>
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div id="modal-help" class="modal-overlay">
+  <div class="modal-card" style="max-width:500px">
+    <div class="modal-header">
+      <span class="modal-title">? Help & Commands</span>
+      <button class="modal-close" onclick="document.getElementById('modal-help').classList.remove('show')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="help-section">
+        <div class="help-title">🖥️ Terminal Tips</div>
+        <div class="help-row"><kbd>↑</kbd><span>Previous command</span></div>
+        <div class="help-row"><kbd>Tab</kbd><span>Autocomplete command</span></div>
+        <div class="help-row"><kbd>Enter</kbd><span>Run command</span></div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">⌨️ Toolbar Actions</div>
+        <div class="help-row"><span class="help-cmd">Levels</span><span>Browse all challenges</span></div>
+        <div class="help-row"><span class="help-cmd">Objective</span><span>See the goal commit graph</span></div>
+        <div class="help-row"><span class="help-cmd">Solution</span><span>Get solution commands</span></div>
+        <div class="help-row"><span class="help-cmd">Undo</span><span>Undo last git command</span></div>
+        <div class="help-row"><span class="help-cmd">Reset</span><span>Restart the challenge</span></div>
+      </div>
+      <div class="help-section">
+        <div class="help-title">📊 Graph Legend</div>
+        <div class="help-row"><span style="color:var(--accent)">● Green</span><span>main/master branch</span></div>
+        <div class="help-row"><span style="color:var(--accent-purple)">● Purple</span><span>feature branch</span></div>
+        <div class="help-row"><span style="color:var(--accent-red)">● Red</span><span>hotfix branch</span></div>
+        <div class="help-row"><span style="color:var(--accent-blue)">● Blue</span><span>develop branch</span></div>
+        <div class="help-row"><span style="color:#fff">◆ Diamond</span><span>merge commit</span></div>
+        <div class="help-row"><span style="color:var(--accent)">◉ Ring</span><span>current HEAD</span></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Success Overlay -->
@@ -185,12 +266,36 @@
   </div>
 </div>
 
-<!-- Scripts — ORDER MATTERS -->
-<script src="git-engine.js"></script>
-<script src="graph-renderer.js"></script>
-<script src="challenges.js"></script>
-<script src="i18n.js"></script>
-<script src="app.js"></script>
 
+<!-- ── CHALLENGE INTRO DIALOG ── -->
+<div id="modal-intro" class="modal-overlay">
+  <div class="intro-card">
+    <div class="intro-card-header">
+      <div>
+        <div class="intro-tier-badge" id="intro-tier"></div>
+        <div class="intro-title" id="intro-title"></div>
+      </div>
+      <button class="intro-close" id="intro-close">✕</button>
+    </div>
+    <div class="intro-card-body" id="intro-body"></div>
+    <div class="intro-card-footer">
+      <div class="intro-diff-badge" id="intro-diff"></div>
+      <div class="intro-nav">
+        <button class="intro-nav-btn" id="intro-prev" title="Previous challenge">←</button>
+        <button class="intro-nav-btn" id="intro-next" title="Next challenge">→</button>
+      </div>
+      <button class="intro-start-btn" id="intro-start">
+        Start Challenge <span class="checkmark">✔</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="js/git-engine.js"></script>
+<script src="js/graph-renderer.js"></script>
+<script src="js/challenges.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/intros.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
