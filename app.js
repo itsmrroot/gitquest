@@ -476,14 +476,7 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
       document.getElementById('modal-help')?.classList.add('show');
     });
 
-    document.getElementById('goal-toggle')?.addEventListener('click', () => {
-      const body = document.getElementById('goal-panel-body');
-      const btn  = document.getElementById('goal-toggle');
-      if (!body) return;
-      const collapsed = body.style.display === 'none';
-      body.style.display = collapsed ? 'block' : 'none';
-      btn.textContent = collapsed ? '−' : '+';
-    });
+    this._bindGoalPanel();
 
     document.getElementById('tool-reset-all')?.addEventListener('click', () => {
       document.getElementById('modal-reset-all')?.classList.add('show');
@@ -513,6 +506,8 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
       const xpEl = document.getElementById('xp-display');
       if (xpEl) xpEl.textContent = `⭐ 0 XP`;
       document.getElementById('modal-reset-all')?.classList.remove('show');
+      document.getElementById('goal-panel').style.display = 'none';
+      document.getElementById('goal-reopen').style.display = 'none';
     });
 
     // Close modals on overlay click
@@ -819,7 +814,72 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     if (out) out.innerHTML = '';
     this._log('info', t('sandboxMode'));
     this._renderSandboxPanel();
-    document.getElementById('goal-panel')?.style && (document.getElementById('goal-panel').style.display = 'none');
+    document.getElementById('goal-panel').style.display = 'none';
+    document.getElementById('goal-reopen').style.display = 'none';
+  }
+
+  _bindGoalPanel() {
+    const panel   = document.getElementById('goal-panel');
+    const handle  = document.getElementById('goal-drag-handle');
+    const reopen  = document.getElementById('goal-reopen');
+    if (!panel) return;
+
+    // ── Minimise / expand ──
+    document.getElementById('goal-toggle')?.addEventListener('click', () => {
+      const body = document.getElementById('goal-panel-body');
+      const btn  = document.getElementById('goal-toggle');
+      if (!body) return;
+      const collapsed = body.style.display === 'none';
+      body.style.display = collapsed ? 'block' : 'none';
+      if (btn) btn.textContent = collapsed ? '−' : '+';
+    });
+
+    // ── Close → show re-open badge ──
+    document.getElementById('goal-close')?.addEventListener('click', () => {
+      panel.style.display = 'none';
+      if (reopen && this.currentChallenge) reopen.style.display = 'flex';
+    });
+
+    reopen?.addEventListener('click', () => {
+      reopen.style.display = 'none';
+      panel.style.display = 'block';
+    });
+
+    // ── Drag ──
+    if (!handle) return;
+    let dragging = false, ox = 0, oy = 0;
+
+    handle.addEventListener('mousedown', e => {
+      if (e.target.closest('.goal-panel-btn')) return;
+      dragging = true;
+      handle.style.cursor = 'grabbing';
+      // Switch to fixed so it can roam freely over the whole viewport
+      const rect = panel.getBoundingClientRect();
+      panel.style.position = 'fixed';
+      panel.style.left     = rect.left + 'px';
+      panel.style.top      = rect.top  + 'px';
+      panel.style.right    = 'auto';
+      ox = e.clientX - rect.left;
+      oy = e.clientY - rect.top;
+      e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      let x = e.clientX - ox;
+      let y = e.clientY - oy;
+      // Keep inside viewport
+      x = Math.max(0, Math.min(window.innerWidth  - panel.offsetWidth,  x));
+      y = Math.max(0, Math.min(window.innerHeight - panel.offsetHeight, y));
+      panel.style.left = x + 'px';
+      panel.style.top  = y + 'px';
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      handle.style.cursor = '';
+    });
   }
 
   _showGoalPanel(challengeId) {

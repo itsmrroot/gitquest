@@ -2569,15 +2569,13 @@ kbd {
   align-items: center;
   justify-content: space-between;
   padding: 7px 10px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
   color: var(--text-primary);
   background: var(--bg-tertiary, var(--bg-panel));
   border-bottom: 1px solid var(--border);
   user-select: none;
 }
 
+/* legacy - kept for safety */
 .goal-hide-btn {
   background: none;
   border: none;
@@ -2607,4 +2605,74 @@ kbd {
   display: block;
   width: 100%;
   padding: 4px 0 6px;
+}
+
+/* ── Goal panel drag + close upgrades ── */
+.goal-panel-header {
+  cursor: grab;
+}
+.goal-panel-header:active {
+  cursor: grabbing;
+}
+
+.goal-panel-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  pointer-events: none; /* title doesn't block drag */
+}
+
+.goal-panel-btns {
+  display: flex;
+  gap: 2px;
+}
+
+.goal-panel-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 1px 5px;
+  border-radius: 3px;
+  transition: var(--transition);
+}
+
+.goal-panel-btn:hover {
+  color: var(--text-primary);
+  background: var(--border);
+}
+
+.goal-close-btn:hover {
+  color: var(--accent-red) !important;
+  background: rgba(248, 81, 73, 0.12) !important;
+}
+
+/* Re-open badge */
+#goal-reopen {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  z-index: 50;
+  transition: var(--transition);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+#goal-reopen:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(57, 211, 83, 0.08);
 }

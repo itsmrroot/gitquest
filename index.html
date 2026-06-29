@@ -110,15 +110,21 @@
 
       <!-- ── GOAL TO REACH PANEL ── -->
       <div id="goal-panel" style="display:none">
-        <div class="goal-panel-header">
-          <span>🎯 Goal To Reach</span>
-          <button class="goal-hide-btn" id="goal-toggle" title="Collapse / expand">−</button>
+        <div class="goal-panel-header" id="goal-drag-handle">
+          <span class="goal-panel-title">🎯 Goal To Reach</span>
+          <div class="goal-panel-btns">
+            <button class="goal-panel-btn" id="goal-toggle" title="Minimise">−</button>
+            <button class="goal-panel-btn goal-close-btn" id="goal-close" title="Close">×</button>
+          </div>
         </div>
         <div id="goal-panel-body">
           <div id="goal-note" class="goal-note"></div>
           <svg id="goal-svg" xmlns="http://www.w3.org/2000/svg"></svg>
         </div>
       </div>
+
+      <!-- Re-open badge shown when goal panel is closed -->
+      <button id="goal-reopen" style="display:none" title="Show goal graph">🎯 Goal</button>
     </div>
 
     <div id="terminal-area">
