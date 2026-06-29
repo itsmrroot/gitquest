@@ -198,33 +198,55 @@ class GraphRenderer {
       root.appendChild(txt);
     }
 
-    // Draw branch labels (above nodes)
+    // Draw branch labels (above nodes) — stack multiple labels per commit
+    // Group branches by the commit they point to
+    const branchesByCommit = {};
     for (const [bname, bid] of Object.entries(branches)) {
+      if (!pos[bid]) continue;
+      if (!branchesByCommit[bid]) branchesByCommit[bid] = [];
+      // Put active branch first so it renders at the bottom (closest to node)
+      if (bname === headBranch) branchesByCommit[bid].unshift(bname);
+      else branchesByCommit[bid].push(bname);
+    }
+
+    const LABEL_H = 16; // height of each label pill
+    const LABEL_GAP = 2; // gap between stacked pills
+
+    for (const [bid, names] of Object.entries(branchesByCommit)) {
       const p = pos[bid];
-      if (!p) continue;
-      const isActive = bname === headBranch;
-      const color = this._branchColor(bname);
-      const labelY = p.y - 20;
-      const labelText = isActive ? `● ${bname}` : bname;
-      const charW = 6.5;
-      const w = labelText.length * charW + 14;
+      // Draw from bottom (closest to node) upward
+      for (let i = 0; i < names.length; i++) {
+        const bname = names[i];
+        const isActive = bname === headBranch;
+        const color = this._branchColor(bname);
+        const labelText = isActive ? `● ${bname}` : bname;
+        const charW = 6.5;
+        const w = Math.max(labelText.length * charW + 14, 28);
+        // i=0 is closest to the node, i=1 is above it, etc.
+        const bottomY = p.y - 18 - i * (LABEL_H + LABEL_GAP);
 
-      const rect = document.createElementNS(ns, 'rect');
-      rect.setAttribute('x', p.x - w / 2); rect.setAttribute('y', labelY - 9);
-      rect.setAttribute('width', w); rect.setAttribute('height', 14);
-      rect.setAttribute('rx', '3');
-      rect.setAttribute('fill', isActive ? color : 'transparent');
-      rect.setAttribute('stroke', color); rect.setAttribute('stroke-width', '1');
-      root.appendChild(rect);
+        const rect = document.createElementNS(ns, 'rect');
+        rect.setAttribute('x', p.x - w / 2);
+        rect.setAttribute('y', bottomY - LABEL_H + 4);
+        rect.setAttribute('width', w);
+        rect.setAttribute('height', LABEL_H);
+        rect.setAttribute('rx', '4');
+        rect.setAttribute('fill', isActive ? color : 'transparent');
+        rect.setAttribute('stroke', color);
+        rect.setAttribute('stroke-width', '1.5');
+        root.appendChild(rect);
 
-      const lbl = document.createElementNS(ns, 'text');
-      lbl.setAttribute('x', p.x); lbl.setAttribute('y', labelY + 2);
-      lbl.setAttribute('text-anchor', 'middle');
-      lbl.setAttribute('fill', isActive ? '#000' : color);
-      lbl.setAttribute('font-size', '9'); lbl.setAttribute('font-weight', '700');
-      lbl.setAttribute('font-family', 'JetBrains Mono, monospace');
-      lbl.textContent = labelText;
-      root.appendChild(lbl);
+        const lbl = document.createElementNS(ns, 'text');
+        lbl.setAttribute('x', p.x);
+        lbl.setAttribute('y', bottomY - 2);
+        lbl.setAttribute('text-anchor', 'middle');
+        lbl.setAttribute('fill', isActive ? '#0d1117' : color);
+        lbl.setAttribute('font-size', '9');
+        lbl.setAttribute('font-weight', '700');
+        lbl.setAttribute('font-family', 'JetBrains Mono, monospace');
+        lbl.textContent = labelText;
+        root.appendChild(lbl);
+      }
     }
 
     // Draw tags

@@ -497,10 +497,77 @@ class GitEngine {
 
   _gitHelp() {
     return {
-      ok: true, msg: `Available commands:
-  commit, branch, checkout, switch, merge, rebase
-  log, status, add, reset, revert, cherry-pick
-  tag, stash, diff, remote, push, pull, fetch` };
+      ok: true, msg: `Git Version GITQUEST.1.0
+
+Usage: git <command> [<args>]
+
+Supported commands:
+
+git commit        Record changes to the repository
+  -m <msg>          Commit message
+  --amend           Amend the last commit
+  -a / --all        Stage all tracked files before committing
+
+git branch        List, create, or delete branches
+  -d <name>         Delete branch
+  -D <name>         Force-delete branch
+  -m <old> <new>    Rename branch
+  -f <name> <ref>   Force-move branch to commit
+
+git checkout      Switch branches or restore files
+  -b <name>         Create and switch to new branch
+  -B <name>         Force-create and switch to branch
+
+git switch        Switch branches (modern syntax)
+  -c / --create     Create and switch to new branch
+  -C / --force-create   Force-create and switch
+
+git undo          Undo the last state-changing command
+  (also works as just: undo)
+
+git merge         Join two development histories
+  <branch>          Merge branch into HEAD
+  --no-ff           Always create a merge commit
+
+git rebase        Reapply commits on top of another base
+  <branch>          Rebase current branch onto branch
+  --onto <new> <old>  Rebase a range of commits
+
+git reset         Reset HEAD to a specified state
+  --hard <ref>      Reset index and working tree
+  --soft <ref>      Reset only HEAD, keep changes staged
+
+git revert        Revert an existing commit
+  <commit>          Create a new commit that undoes commit
+
+git cherry-pick   Apply changes from specific commits
+  <commit>...       Pick one or more commits onto HEAD
+
+git log           Show commit history
+git status        Show working tree status
+git diff          Show changes between commits
+git add           Stage file contents (simulated)
+
+git tag           Create or delete tag references
+  <name> [<ref>]    Create a tag at ref (default: HEAD)
+  -d <name>         Delete a tag
+
+git stash         Stash uncommitted changes (simulated)
+  pop               Apply and drop the latest stash
+  list              List all stash entries
+  drop              Drop the latest stash
+
+git remote        Manage remote repositories
+  add <name> <url>  Add a remote
+  remove <name>     Remove a remote
+  -v                List remotes with URLs
+
+git fetch         Download objects from a remote
+git pull          Fetch and integrate from a remote
+  --rebase          Rebase instead of merge after fetch
+
+git push          Update remote refs
+  --force           Force push (overwrite remote)` };
   }
 
   // ── HELPERS ──

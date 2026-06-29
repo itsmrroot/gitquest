@@ -64,6 +64,32 @@
     <button class="tool-btn" id="tool-help" title="Show help">
       <span class="tool-icon">?</span> <span>Help</span>
     </button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn tool-btn-danger" id="tool-reset-all" title="Reset all progress and start over">
+      <span class="tool-icon">🗑</span> <span>Reset All</span>
+    </button>
+  </div>
+
+  <!-- ── RESET ALL CONFIRMATION MODAL ── -->
+  <div class="modal-overlay" id="modal-reset-all">
+    <div class="modal-card reset-confirm-card">
+      <div class="reset-confirm-icon">⚠️</div>
+      <div class="reset-confirm-title">Reset All Progress?</div>
+      <div class="reset-confirm-body">
+        This will permanently delete:
+        <ul class="reset-confirm-list">
+          <li>All completed challenges</li>
+          <li>All earned XP</li>
+          <li>Your current challenge progress</li>
+          <li>All seen intro dialogs</li>
+        </ul>
+        <strong>This cannot be undone.</strong>
+      </div>
+      <div class="reset-confirm-actions">
+        <button class="reset-cancel-btn" id="reset-all-cancel">Cancel</button>
+        <button class="reset-confirm-btn" id="reset-all-confirm">Yes, Reset Everything</button>
+      </div>
+    </div>
   </div>
 
   <!-- ── LEFT SIDEBAR ── -->

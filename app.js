@@ -470,6 +470,36 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
       document.getElementById('modal-help')?.classList.add('show');
     });
 
+    document.getElementById('tool-reset-all')?.addEventListener('click', () => {
+      document.getElementById('modal-reset-all')?.classList.add('show');
+    });
+
+    document.getElementById('reset-all-cancel')?.addEventListener('click', () => {
+      document.getElementById('modal-reset-all')?.classList.remove('show');
+    });
+
+    document.getElementById('reset-all-confirm')?.addEventListener('click', () => {
+      // Wipe all GitQuest localStorage keys
+      ['gq_xp', 'gq_completed', 'gq_seen_intros'].forEach(k => localStorage.removeItem(k));
+      // Reset in-memory state
+      this.xp = 0;
+      this.completedChallenges = [];
+      this.currentChallenge = null;
+      this.currentTier = null;
+      this.engine.reset();
+      this.renderer?.render();
+      // Rebuild sidebar
+      this._buildSidebar();
+      // Switch to sandbox / clear terminal
+      const out = document.getElementById('terminal-output');
+      if (out) out.innerHTML = '';
+      this._log('success', '✅ All progress reset. Start fresh!');
+      // Update XP display
+      const xpEl = document.getElementById('xp-display');
+      if (xpEl) xpEl.textContent = `⭐ 0 XP`;
+      document.getElementById('modal-reset-all')?.classList.remove('show');
+    });
+
     // Close modals on overlay click
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
       overlay.addEventListener('click', (e) => {
@@ -671,6 +701,16 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     const input = raw.trim();
     if (!input) return;
 
+    // Intercept undo before it reaches the engine
+    if (input === 'undo' || input === 'git undo') {
+      this.cmdHistory.push(input);
+      this.histIdx = -1;
+      const branch = this.engine.headBranch || '(detached)';
+      this._logRaw(`<span class="term-prompt">${this._esc(branch)} $</span> <span class="term-cmd">${this._esc(input)}</span>`);
+      this._undoCmd();
+      return;
+    }
+
     // Save snapshot only for state-changing commands (skip read-only ones)
     const sub = input.split(/\s+/)[1];
     const readOnly = new Set(['log', 'status', 'diff', 'help']);
@@ -854,6 +894,8 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
       ['git stash pop', 'Pop stash'],
       ['git remote add origin ', 'Add remote'],
       ['git push origin main', 'Push to remote'],
+      ['git undo', 'Undo last command'],
+      ['undo', 'Undo last command'],
     ];
 
     const matches = CMDS.filter(([cmd]) => cmd.startsWith(val) && cmd.trim() !== val.trim());
