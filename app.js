@@ -502,12 +502,10 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
       const out = document.getElementById('terminal-output');
       if (out) out.innerHTML = '';
       this._log('success', '✅ All progress reset. Start fresh!');
-      // Update XP display
-      const xpEl = document.getElementById('xp-display');
-      if (xpEl) xpEl.textContent = `⭐ 0 XP`;
+      this._updateXP();
       document.getElementById('modal-reset-all')?.classList.remove('show');
-      document.getElementById('goal-panel').style.display = 'none';
-      document.getElementById('goal-reopen').style.display = 'none';
+      document.getElementById('goal-panel')?.style.setProperty('display', 'none');
+      document.getElementById('goal-reopen')?.style.setProperty('display', 'none');
     });
 
     // Close modals on overlay click
@@ -814,8 +812,8 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     if (out) out.innerHTML = '';
     this._log('info', t('sandboxMode'));
     this._renderSandboxPanel();
-    document.getElementById('goal-panel').style.display = 'none';
-    document.getElementById('goal-reopen').style.display = 'none';
+    document.getElementById('goal-panel')?.style.setProperty('display', 'none');
+    document.getElementById('goal-reopen')?.style.setProperty('display', 'none');
   }
 
   _bindGoalPanel() {

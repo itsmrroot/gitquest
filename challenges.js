@@ -245,7 +245,7 @@ const TIERS = [
         setup: ['git commit -m "Production ready"'],
         goals: [
           { id: 'g1', text: 'Create a feature branch', check: (s) => Object.keys(s.branches).some(b => b !== 'main') },
-          { id: 'g2', text: 'Make 2+ commits on feature', check: (s, h) => h.filter(cmd => cmd.startsWith('git commit')).length >= 3 },
+          { id: 'g2', text: 'Make 2+ commits on feature', check: (s, h) => h.filter(cmd => cmd.startsWith('git commit')).length >= 2 },
           { id: 'g3', text: 'Merge back with --no-ff', check: (s, h) => h.some(cmd => cmd.includes('merge') && cmd.includes('no-ff')) }
         ],
         hints: [
@@ -326,7 +326,7 @@ const TIERS = [
         setup: ['git commit -m "v1.0"', 'git checkout -b develop', 'git commit -m "Ongoing work"', 'git checkout main'],
         goals: [
           { id: 'g1', text: 'Create hotfix branch from main', check: (s) => Object.keys(s.branches).some(b => b.startsWith('hotfix')) },
-          { id: 'g2', text: 'Commit the fix', check: (s, h) => h.filter(c => c.startsWith('git commit')).length >= 2 },
+          { id: 'g2', text: 'Commit the fix', check: (s, h) => h.filter(c => c.startsWith('git commit')).length >= 1 },
           { id: 'g3', text: 'Merge hotfix into main', check: (s, h) => h.some(cmd => cmd.includes('merge') && cmd.includes('hotfix')) }
         ],
         hints: [
@@ -362,7 +362,7 @@ const TIERS = [
         description: 'git bisect uses binary search to find which commit introduced a bug. Simulate the workflow.',
         setup: ['git commit -m "v1"', 'git commit -m "v2"', 'git commit -m "bug introduced"', 'git commit -m "v4"', 'git commit -m "v5"'],
         goals: [
-          { id: 'g1', text: 'Create 5+ commits to bisect', check: (s, h) => h.filter(c => c.startsWith('git commit')).length >= 3 },
+          { id: 'g1', text: 'Create 5+ commits to bisect', check: (s) => Object.keys(s.commits).length >= 6 },
           { id: 'g2', text: 'Navigate history with checkout', check: (s, h) => h.some(cmd => cmd.includes('checkout HEAD~')) }
         ],
         hints: [
