@@ -18,15 +18,21 @@ While LearnGitBranching is great for visualizing branching, GitQuest goes furthe
 | Visual commit graph | ✅ | ✅ |
 | Interactive terminal | ✅ | ✅ |
 | Structured levels | ✅ | ✅ |
-| AI-powered tutor | ❌ | ✅ |
-| Real-world workflows | Partial | ✅ |
+| Sandbox mode | ✅ | ✅ |
+| AI-powered tutor | ❌ | ✅ Gemini-powered |
+| Real-world workflows | Partial | ✅ Gitflow, Hotfix, etc. |
 | Hint system | Basic | ✅ Multi-level hints |
-| XP & progression | ❌ | ✅ |
+| XP & progression | ❌ | ✅ 5 levels, XP badges |
 | Named level tiers | ❌ | ✅ 5 tiers |
 | Cheat sheet | ❌ | ✅ Always accessible |
-| Sandbox mode | ✅ | ✅ |
-| Dark terminal aesthetic | ❌ | ✅ |
+| Challenge intro dialog | ❌ | ✅ What you'll learn + prereqs |
+| Goal-to-Reach panel | ❌ | ✅ Draggable target graph |
+| Undo command | ❌ | ✅ `git undo` / `undo` |
+| Multi-language support | ❌ | ✅ 10 languages |
+| Dark/light theme | ❌ | ✅ |
 | Autocomplete | ❌ | ✅ |
+| Challenge unlock system | ❌ | ✅ Sequential progression |
+| Progress persistence | ❌ | ✅ localStorage |
 
 ---
 
@@ -71,15 +77,14 @@ While LearnGitBranching is great for visualizing branching, GitQuest goes furthe
 ```
 gitquest/
 ├── index.html          # Main HTML shell
-├── css/
-│   └── style.css       # All styles (dark terminal theme)
-├── js/
-│   ├── git-engine.js   # Full Git simulation engine
-│   ├── graph-renderer.js  # SVG commit graph with animations
-│   ├── challenges.js   # All 22 challenges + curriculum data
-│   └── app.js          # Main app controller
-└── assets/
-    └── screenshot.png
+├── style.css           # All styles (dark terminal theme)
+├── git-engine.js       # Full Git simulation engine
+├── graph-renderer.js   # SVG commit graph with pan support
+├── challenges.js       # All 22 challenges + curriculum data
+├── goal-graphs.js      # Target graph states for each challenge
+├── intros.js           # Challenge intro dialog content
+├── i18n.js             # 10-language translations
+└── app.js              # Main app controller
 ```
 
 **100% client-side** — no backend, no build step. Just open `index.html`.
@@ -108,6 +113,7 @@ git remote [add|remove|show|-v]
 git push [remote] [branch]
 git pull [remote] [branch]
 git fetch [remote]
+git undo  (also: undo)
 git help
 ```
 
@@ -115,15 +121,45 @@ git help
 
 ---
 
+## 🎯 Goal-to-Reach Panel
+
+Each challenge shows a **draggable floating panel** with the target commit graph — the exact state you need to reach to complete the challenge. It auto-scales to fit the full graph, regardless of complexity. You can minimize, close, or drag it anywhere on screen.
+
+---
+
+## 🗂️ Challenge Intro Dialog
+
+When you open a challenge for the first time, GitQuest shows a full intro card with:
+- What you'll learn
+- Prerequisites
+- First-step hint
+- A preview of all objectives
+
+You can also navigate between challenges directly from the intro without losing your place.
+
+---
+
+## ↩ Undo
+
+Made a mistake? Type `git undo` (or just `undo`) to roll back the last state-changing command. The undo stack holds up to 20 steps and resets when you load a new challenge.
+
+---
+
 ## 🤖 AI Tutor
 
-GitQuest embeds Claude (Anthropic) as a real-time AI tutor that:
+GitQuest embeds **Google Gemini** as a real-time AI tutor that:
 - Knows your **current challenge and objectives**
 - Knows your **current repo state** (branches, HEAD)
 - Tracks your **command history** to give contextual advice
 - Answers any Git question in the AI Chat tab
 
-To enable: set your Anthropic API key via the Claude.ai interface (no config needed when using GitQuest within claude.ai).
+To enable: paste your free Gemini API key in the **AI Tutor** tab. Get one at [aistudio.google.com](https://aistudio.google.com/app/apikey) — no credit card needed. GitQuest auto-detects all models available on your key.
+
+---
+
+## 🌍 Multi-language Support
+
+GitQuest is fully translated into **10 languages**: English, German, French, Spanish, Portuguese, Arabic, Japanese, Chinese, Hindi, and Turkish. The UI, mission text, hints, and AI responses all adapt to the selected language.
 
 ---
 
@@ -131,7 +167,7 @@ To enable: set your Anthropic API key via the Claude.ai interface (no config nee
 
 ### Option 1: Direct open
 ```bash
-git clone https://github.com/your-username/gitquest.git
+git clone https://github.com/itsmrroot/gitquest.git
 cd gitquest
 open index.html   # Mac
 # or: start index.html  (Windows)
@@ -154,10 +190,10 @@ python3 -m http.server 8080
 
 ## 🎨 Design
 
-- **Theme**: Dark terminal meets modern GitHub UI
+- **Theme**: Dark terminal meets modern GitHub UI (dark/light toggle)
 - **Accent**: Git green (`#39d353`) — the color of a successful push
 - **Font**: JetBrains Mono for code, Inter for UI
-- **Graph**: SVG-based animated commit graph with pan/zoom
+- **Graph**: SVG-based commit graph with pan support
 - **No frameworks**: Vanilla JS + CSS custom properties
 
 ---
@@ -165,7 +201,7 @@ python3 -m http.server 8080
 ## 🛠️ Extending GitQuest
 
 ### Adding a Challenge
-Edit `js/challenges.js` and add to the appropriate tier:
+Edit `challenges.js` and add to the appropriate tier:
 
 ```javascript
 {
@@ -193,8 +229,10 @@ Edit `js/challenges.js` and add to the appropriate tier:
 }
 ```
 
+Then add a matching target graph in `goal-graphs.js` and an intro entry in `intros.js`.
+
 ### Adding Git Commands
-Edit the `execute()` switch in `js/git-engine.js` and add a `_git<Command>()` method.
+Edit the `execute()` switch in `git-engine.js` and add a `_git<Command>()` method.
 
 ---
 
@@ -210,8 +248,6 @@ Edit the `execute()` switch in `js/git-engine.js` and add a `_git<Command>()` me
 - New challenges (especially Git internals, worktrees, submodules)
 - Improved graph layout algorithm
 - Mobile support
-- i18n / translations
-- Dark/light theme toggle
 - Progress export/import
 
 ---
@@ -226,7 +262,7 @@ MIT License — use it, fork it, learn from it.
 
 Inspired by [LearnGitBranching](https://github.com/pcottle/learnGitBranching) by Peter Cottle.
 
-Built with ❤️ using vanilla JS, SVG, and the Anthropic Claude API.
+Built with ❤️ using vanilla JS, SVG, and the Google Gemini API.
 
 ---
 
