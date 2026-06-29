@@ -892,7 +892,31 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
   }
 
   _getGeminiModel() {
-    return localStorage.getItem('gq_gemini_model') || 'gemini-1.5-flash';
+    return localStorage.getItem('gq_gemini_model') || '';
+  }
+
+  async _fetchAvailableModels(key) {
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`,
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+    const all = (data.models || [])
+      .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+      .map(m => ({ id: m.name.replace('models/', ''), label: m.displayName || m.name.replace('models/', '') }));
+    // Sort preferred models first
+    const PREF = ['gemini-1.5-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash-8b', 'gemini-2.0-flash'];
+    all.sort((a, b) => {
+      const ai = PREF.indexOf(a.id), bi = PREF.indexOf(b.id);
+      if (ai === -1 && bi === -1) return a.label.localeCompare(b.label);
+      if (ai === -1) return 1; if (bi === -1) return -1;
+      return ai - bi;
+    });
+    return all;
   }
 
   async _callGemini(userPrompt, systemPrompt, history = []) {
@@ -900,6 +924,7 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     if (!key) throw new Error('No API key set.');
 
     const model = this._getGeminiModel();
+    if (!model) throw new Error('No model selected. Re-open the AI Tutor tab to connect again.');
 
     // Convert chat history to Gemini format (role: 'user'|'model')
     const contents = [
@@ -950,17 +975,9 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     const panel = document.getElementById('ai-chat-content');
     if (!panel) return;
     const existing = panel.querySelector('.key-setup');
-    if (existing) return; // already shown
+    if (existing) return;
 
     const key = this._getGeminiKey();
-    const model = this._getGeminiModel();
-    const MODELS = [
-      { id: 'gemini-1.5-flash',    label: 'Gemini 1.5 Flash',     note: '✅ Recommended — generous free tier' },
-      { id: 'gemini-1.5-flash-8b', label: 'Gemini 1.5 Flash 8B',  note: '⚡ Fastest, most free-tier friendly' },
-      { id: 'gemini-2.0-flash-lite',label: 'Gemini 2.0 Flash Lite',note: '🆕 Newer but may need billing' },
-      { id: 'gemini-2.0-flash',    label: 'Gemini 2.0 Flash',     note: '🆕 Newest — may need billing in some regions' },
-    ];
-
     const setup = document.createElement('div');
     setup.className = 'key-setup';
     setup.innerHTML = `
@@ -968,20 +985,53 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
       <div class="key-setup-title">Connect AI Tutor</div>
       <div class="key-setup-desc">Paste your <strong>free</strong> Google Gemini API key below.<br>Get one at <a class="key-link" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com</a> — no credit card needed.</div>
       <input class="key-input" id="gemini-key-input" type="password" placeholder="AIzaSy..." value="${this._esc(key)}" spellcheck="false" />
-      <div class="model-label">Model</div>
-      <select class="model-select" id="gemini-model-select">
-        ${MODELS.map(m => `<option value="${m.id}" ${m.id === model ? 'selected' : ''}>${m.label} — ${m.note}</option>`).join('')}
-      </select>
-      <button class="key-save-btn" id="key-save-btn">✓ Save & Connect</button>
+      <div id="model-row" style="display:none">
+        <div class="model-label">Available models for your key</div>
+        <select class="model-select" id="gemini-model-select"></select>
+      </div>
+      <button class="key-save-btn" id="key-save-btn">✓ Connect</button>
       ${key ? '<button class="key-clear-btn" id="key-clear-btn">✕ Remove Key</button>' : ''}
-      <div class="key-note">🔒 Stored only in your browser's localStorage. Never sent anywhere except Google.</div>
+      <div id="key-status" class="key-note">🔒 Key stored only in your browser. Models are auto-detected from your account.</div>
     `;
     panel.insertBefore(setup, panel.firstChild);
 
-    document.getElementById('key-save-btn')?.addEventListener('click', () => {
+    const saveBtn = document.getElementById('key-save-btn');
+    const statusEl = document.getElementById('key-status');
+    const modelRow = document.getElementById('model-row');
+    const modelSel = document.getElementById('gemini-model-select');
+    let detectedModels = [];
+
+    saveBtn?.addEventListener('click', async () => {
       const val = document.getElementById('gemini-key-input')?.value.trim();
-      if (!val) return;
-      const sel = document.getElementById('gemini-model-select')?.value || 'gemini-1.5-flash';
+      if (!val) { statusEl.textContent = '⚠️ Paste your API key first.'; return; }
+
+      // If models not yet detected, detect first
+      if (!detectedModels.length) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = '⟳ Detecting models…';
+        statusEl.textContent = '';
+        try {
+          detectedModels = await this._fetchAvailableModels(val);
+          if (!detectedModels.length) throw new Error('No generateContent-capable models found for this key.');
+
+          modelSel.innerHTML = detectedModels
+            .map((m, i) => `<option value="${m.id}" ${i === 0 ? 'selected' : ''}>${m.label}${i === 0 ? ' ✅' : ''}</option>`)
+            .join('');
+          modelRow.style.display = 'block';
+          saveBtn.textContent = '✓ Save & Connect';
+          saveBtn.disabled = false;
+          statusEl.textContent = `Found ${detectedModels.length} model(s). Top pick selected.`;
+        } catch(e) {
+          saveBtn.textContent = '✓ Connect';
+          saveBtn.disabled = false;
+          statusEl.innerHTML = `<span style="color:var(--accent-red)">Error: ${this._esc(e.message)}</span>`;
+        }
+        return;
+      }
+
+      // Second click: save
+      const sel = modelSel?.value || detectedModels[0]?.id || '';
+      if (!sel) return;
       localStorage.setItem('gq_gemini_key', val);
       localStorage.setItem('gq_gemini_model', sel);
       setup.remove();
@@ -992,6 +1042,7 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
         note.className = 'ai-msg assistant';
         note.innerHTML = `<div class="msg-label">GitQuest AI</div>✅ Connected via <strong>${sel}</strong>. Ask me anything about Git!`;
         msgs.appendChild(note);
+        msgs.scrollTop = msgs.scrollHeight;
       }
     });
 
