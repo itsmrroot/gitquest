@@ -69,6 +69,29 @@ const LANGUAGES = {
       graphLegend: '📊 Graph Legend', mainBranch: 'main/master branch',
       featureBranch: 'feature branch', hotfixBranch: 'hotfix branch',
       developBranch: 'develop branch', mergeCommit: 'merge commit', currentHead: 'current HEAD',
+      // Terminal log messages
+      undidCmd: '↩ Undid last command.', progressReset: '✅ All progress reset. Start fresh!',
+      // Goal panel
+      goalToReach: '🎯 Goal To Reach', goalBtnLabel: '🎯 Goal',
+      // AI status
+      poweredBy: 'GitQuest AI — powered by Gemini',
+      // Cheatsheet sections
+      cheatSaving: '📸 Saving Work', cheatBranching: '🌿 Branching',
+      cheatMerging: '🔀 Merging & Rebasing', cheatUndoing: '⏪ Undoing',
+      cheatInspecting: '🔍 Inspecting', cheatRemotes: '🌐 Remotes',
+      // Cheatsheet descriptions
+      cheatStageAll: 'Stage all changes', cheatCommit: 'Commit with message',
+      cheatAmend: 'Edit last commit', cheatStash: 'Stash changes', cheatStashPop: 'Apply stash',
+      cheatListBranch: 'List branches', cheatCreateBranch: 'Create branch',
+      cheatCreateSwitch: 'Create + switch', cheatSwitch: 'Switch (modern)', cheatDeleteBranch: 'Delete branch',
+      cheatMerge: 'Merge branch', cheatNoFF: 'Force merge commit',
+      cheatRebase: 'Rebase onto branch', cheatCherryPick: 'Apply one commit',
+      cheatRevert: 'Safe undo (new commit)', cheatSoft: 'Undo, keep staged',
+      cheatMixed: 'Undo, unstage', cheatHard: '⚠️ Delete commit + changes',
+      cheatLog: 'Commit history', cheatLogOneline: 'Compact history',
+      cheatStatus: 'Working tree status', cheatTag: 'Create tag at HEAD',
+      cheatRemoteAdd: 'Add remote', cheatPush: 'Push branch',
+      cheatPull: 'Fetch + merge', cheatFetch: 'Download changes',
     }
   },
 
