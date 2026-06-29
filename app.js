@@ -183,7 +183,7 @@ class GitQuestApp {
           <div class="challenge-dot ${dotClass}"></div>
           <div class="challenge-info">
             <div class="challenge-name">${ch.name}</div>
-            <div class="challenge-meta">${ch.difficulty}${isLocked ? ' 🔒' : ''}</div>
+            <div class="challenge-meta">${t('diff_' + ch.difficulty) || ch.difficulty}${isLocked ? ' 🔒' : ''}</div>
           </div>
           <div class="challenge-xp">+${ch.xp}XP</div>`;
         if (!isLocked) item.addEventListener('click', () => {
@@ -260,7 +260,7 @@ class GitQuestApp {
     // Difficulty badge
     const diffEl = document.getElementById('intro-diff');
     if (diffEl) {
-      diffEl.textContent = '● ' + challenge.difficulty + ' · ' + challenge.xp + ' XP';
+      diffEl.textContent = '● ' + (t('diff_' + challenge.difficulty) || challenge.difficulty) + ' · ' + challenge.xp + ' XP';
       diffEl.style.background = dc.bg;
       diffEl.style.color = dc.color;
     }
@@ -272,7 +272,7 @@ class GitQuestApp {
 
       if (intro?.whatYouLearn) {
         html += `<div class="intro-what-you-learn">
-          <strong>📚 What you'll learn</strong>
+          <strong>${t('whatYouLearn')}</strong>
           ${intro.whatYouLearn}
         </div>`;
       }
@@ -285,27 +285,27 @@ class GitQuestApp {
 
       if (intro?.prereqs) {
         html += `<div class="intro-prereqs">
-          <strong>📋 Prerequisites</strong>
+          <strong>${t('prerequisites')}</strong>
           ${intro.prereqs}
         </div>`;
       }
 
       if (intro?.firstHint) {
         html += `<div class="intro-first-hint">
-          <strong>💡 First step hint</strong>
+          <strong>${t('firstStepHint')}</strong>
           ${intro.firstHint}
         </div>`;
       }
 
       if (intro?.tip) {
         html += `<div class="intro-first-hint" style="border-color:rgba(88,166,255,0.25);background:rgba(88,166,255,0.07);color:var(--accent-blue)">
-          <strong>⚡ Pro tip</strong>
+          <strong>${t('proTip')}</strong>
           ${intro.tip}
         </div>`;
       }
 
       html += `<div class="intro-goals-preview">
-        <div class="intro-goals-title">🎯 Your objectives</div>
+        <div class="intro-goals-title">${t('yourObjectives')}</div>
         ${challenge.goals.map((g, i) => `
           <div class="intro-goal-row">
             <div class="intro-goal-num">${i+1}</div>
@@ -380,7 +380,7 @@ class GitQuestApp {
 
     panel.innerHTML = `
       <div class="mission-title">${ch.name}</div>
-      <div class="mission-difficulty ${diffClass}">● ${ch.difficulty} · ${ch.xp} XP</div>
+      <div class="mission-difficulty ${diffClass}">● ${t('diff_' + ch.difficulty) || ch.difficulty} · ${ch.xp} XP</div>
       <p class="mission-desc">${ch.description}</p>
       <div class="mission-goal">
         <div class="mission-goal-title">${t('objectives') || '🎯 Objectives'}</div>
@@ -390,7 +390,7 @@ class GitQuestApp {
             <span>${g.text}</span>
           </div>`).join('')}
       </div>
-      ${ch.concept ? `<div class="concept-box">💡 <strong>${t('concept') || 'Concept'}:</strong> ${ch.concept}</div>` : ''}
+      ${ch.concept ? `<div class="concept-box">💡 <strong>${t('concept')}:</strong> ${ch.concept}</div>` : ''}
       <button class="hint-btn" id="hint-btn-main">${t('showHint') || '💡 Show Hint'} (${ch.hints?.length || 0})</button>
       <div class="hint-box" id="hint-box"></div>
       <button class="ask-ai-btn" id="ask-ai-btn-main">${t('askAI') || '✨ Ask AI Tutor'}</button>
@@ -419,7 +419,7 @@ class GitQuestApp {
 
     if (!this._getGeminiKey()) {
       box.style.display = 'block';
-      box.innerHTML = `<span style="color:var(--accent-yellow)">⚠️ Add your free Gemini API key in the <strong>AI Tutor</strong> tab first.</span>`;
+      box.innerHTML = `<span style="color:var(--accent-yellow)">${t('addApiKey').replace('{tab}', `<strong>${t('aiTutor')}</strong>`)}</span>`;
       return;
     }
 
@@ -529,7 +529,7 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     if (!modal || !content) return;
 
     if (!ch) {
-      content.innerHTML = `<div style="color:var(--text-muted);text-align:center;padding:20px">Select a challenge first.</div>`;
+      content.innerHTML = `<div style="color:var(--text-muted);text-align:center;padding:20px">${t('selectFirst')}</div>`;
     } else {
       content.innerHTML = `
         <div class="objective-desc">${ch.description}</div>
@@ -545,7 +545,7 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
               </div>`;
           }).join('')}
         </div>
-        ${ch.concept ? `<div class="concept-callout">💡 <strong>Key concept:</strong> ${ch.concept}</div>` : ''}
+        ${ch.concept ? `<div class="concept-callout">💡 <strong>${t('keyConcept')}:</strong> ${ch.concept}</div>` : ''}
       `;
     }
     modal.classList.add('show');
@@ -558,20 +558,20 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     if (!modal || !content) return;
 
     if (!ch) {
-      content.innerHTML = `<div style="color:var(--text-muted);text-align:center;padding:20px">Select a challenge first.</div>`;
+      content.innerHTML = `<div style="color:var(--text-muted);text-align:center;padding:20px">${t('selectFirst')}</div>`;
     } else {
       const steps = ch.hints || [];
       content.innerHTML = `
-        <div class="solution-warn">⚠️ Try solving it yourself first! Solutions are here to help if you're stuck.</div>
+        <div class="solution-warn">${t('trySolving')}</div>
         <div class="solution-steps">
           ${steps.map((hint, i) => `
             <div class="solution-step" onclick="window.app._pasteCmd('${hint.replace(/'/g,"\\'")}')">
               <span class="step-num">${i+1}</span>
               <span class="step-cmd">${this._esc(hint)}</span>
-              <span class="step-copy">Click to paste ↗</span>
+              <span class="step-copy">${t('clickToPaste')} ↗</span>
             </div>`).join('')}
         </div>
-        <div class="solution-footer">Click any step to paste it into the terminal</div>
+        <div class="solution-footer">${t('clickStepToPaste')}</div>
       `;
     }
     modal.classList.add('show');
@@ -588,7 +588,7 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
 
   _undoCmd() {
     if (this.undoStack.length === 0) {
-      this._log('err', 'Nothing to undo.');
+      this._log('err', t('nothingToUndo'));
       return;
     }
     const snapshot = this.undoStack.pop();

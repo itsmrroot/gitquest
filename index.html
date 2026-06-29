@@ -48,25 +48,25 @@
     </button>
     <div class="tool-sep"></div>
     <button class="tool-btn" id="tool-objective" title="Show goal state">
-      <span class="tool-icon">🎯</span> <span>Objective</span>
+      <span class="tool-icon">🎯</span> <span data-i18n="toolObjective">Objective</span>
     </button>
     <button class="tool-btn" id="tool-solution" title="Show solution hint">
-      <span class="tool-icon">💡</span> <span>Solution</span>
+      <span class="tool-icon">💡</span> <span data-i18n="toolSolution">Solution</span>
     </button>
     <div class="tool-sep"></div>
     <button class="tool-btn" id="tool-undo" title="Undo last command">
-      <span class="tool-icon">↩</span> <span>Undo</span>
+      <span class="tool-icon">↩</span> <span data-i18n="toolUndo">Undo</span>
     </button>
     <button class="tool-btn" id="tool-reset" title="Reset challenge">
-      <span class="tool-icon">⟳</span> <span>Reset</span>
+      <span class="tool-icon">⟳</span> <span data-i18n="toolReset">Reset</span>
     </button>
     <div class="tool-sep"></div>
     <button class="tool-btn" id="tool-help" title="Show help">
-      <span class="tool-icon">?</span> <span>Help</span>
+      <span class="tool-icon">?</span> <span data-i18n="toolHelp">Help</span>
     </button>
     <div class="tool-sep"></div>
     <button class="tool-btn tool-btn-danger" id="tool-reset-all" title="Reset all progress and start over">
-      <span class="tool-icon">🗑</span> <span>Reset All</span>
+      <span class="tool-icon">🗑</span> <span data-i18n="toolResetAll">Reset All</span>
     </button>
   </div>
 
@@ -74,20 +74,20 @@
   <div class="modal-overlay" id="modal-reset-all">
     <div class="modal-card reset-confirm-card">
       <div class="reset-confirm-icon">⚠️</div>
-      <div class="reset-confirm-title">Reset All Progress?</div>
+      <div class="reset-confirm-title" data-i18n="resetTitle">Reset All Progress?</div>
       <div class="reset-confirm-body">
-        This will permanently delete:
+        <span data-i18n="resetBody">This will permanently delete:</span>
         <ul class="reset-confirm-list">
-          <li>All completed challenges</li>
-          <li>All earned XP</li>
-          <li>Your current challenge progress</li>
-          <li>All seen intro dialogs</li>
+          <li data-i18n="resetItem1">All completed challenges</li>
+          <li data-i18n="resetItem2">All earned XP</li>
+          <li data-i18n="resetItem3">Your current challenge progress</li>
+          <li data-i18n="resetItem4">All seen intro dialogs</li>
         </ul>
-        <strong>This cannot be undone.</strong>
+        <strong data-i18n="resetWarning">This cannot be undone.</strong>
       </div>
       <div class="reset-confirm-actions">
-        <button class="reset-cancel-btn" id="reset-all-cancel">Cancel</button>
-        <button class="reset-confirm-btn" id="reset-all-confirm">Yes, Reset Everything</button>
+        <button class="reset-cancel-btn" id="reset-all-cancel" data-i18n="cancelBtn">Cancel</button>
+        <button class="reset-confirm-btn" id="reset-all-confirm" data-i18n="resetConfirmBtn">Yes, Reset Everything</button>
       </div>
     </div>
   </div>
@@ -263,7 +263,7 @@
 <div id="modal-objective" class="modal-overlay">
   <div class="modal-card" style="max-width:520px">
     <div class="modal-header">
-      <span class="modal-title">🎯 Goal State</span>
+      <span class="modal-title" data-i18n="goalState">🎯 Goal State</span>
       <button class="modal-close" onclick="document.getElementById('modal-objective').classList.remove('show')">✕</button>
     </div>
     <div class="modal-body">
@@ -276,7 +276,7 @@
 <div id="modal-solution" class="modal-overlay">
   <div class="modal-card" style="max-width:480px">
     <div class="modal-header">
-      <span class="modal-title">💡 Solution</span>
+      <span class="modal-title" data-i18n="solutionTitle">💡 Solution</span>
       <button class="modal-close" onclick="document.getElementById('modal-solution').classList.remove('show')">✕</button>
     </div>
     <div class="modal-body" id="solution-content"></div>
@@ -287,32 +287,32 @@
 <div id="modal-help" class="modal-overlay">
   <div class="modal-card" style="max-width:500px">
     <div class="modal-header">
-      <span class="modal-title">? Help & Commands</span>
+      <span class="modal-title" data-i18n="helpTitle">? Help & Commands</span>
       <button class="modal-close" onclick="document.getElementById('modal-help').classList.remove('show')">✕</button>
     </div>
     <div class="modal-body">
       <div class="help-section">
-        <div class="help-title">🖥️ Terminal Tips</div>
-        <div class="help-row"><kbd>↑</kbd><span>Previous command</span></div>
-        <div class="help-row"><kbd>Tab</kbd><span>Autocomplete command</span></div>
-        <div class="help-row"><kbd>Enter</kbd><span>Run command</span></div>
+        <div class="help-title" data-i18n="terminalTips">🖥️ Terminal Tips</div>
+        <div class="help-row"><kbd>↑</kbd><span data-i18n="prevCmd">Previous command</span></div>
+        <div class="help-row"><kbd>Tab</kbd><span data-i18n="autocompleteCmd">Autocomplete command</span></div>
+        <div class="help-row"><kbd>Enter</kbd><span data-i18n="runCmd">Run command</span></div>
       </div>
       <div class="help-section">
-        <div class="help-title">⌨️ Toolbar Actions</div>
-        <div class="help-row"><span class="help-cmd">Levels</span><span>Browse all challenges</span></div>
-        <div class="help-row"><span class="help-cmd">Objective</span><span>See the goal commit graph</span></div>
-        <div class="help-row"><span class="help-cmd">Solution</span><span>Get solution commands</span></div>
-        <div class="help-row"><span class="help-cmd">Undo</span><span>Undo last git command</span></div>
-        <div class="help-row"><span class="help-cmd">Reset</span><span>Restart the challenge</span></div>
+        <div class="help-title" data-i18n="toolbarActions">⌨️ Toolbar Actions</div>
+        <div class="help-row"><span class="help-cmd" data-i18n="challenges">Levels</span><span data-i18n="browseChallenges">Browse all challenges</span></div>
+        <div class="help-row"><span class="help-cmd" data-i18n="toolObjective">Objective</span><span data-i18n="seeGoalGraph">See the goal commit graph</span></div>
+        <div class="help-row"><span class="help-cmd" data-i18n="toolSolution">Solution</span><span data-i18n="getSolution">Get solution commands</span></div>
+        <div class="help-row"><span class="help-cmd" data-i18n="toolUndo">Undo</span><span data-i18n="undoLastCmd">Undo last git command</span></div>
+        <div class="help-row"><span class="help-cmd" data-i18n="toolReset">Reset</span><span data-i18n="restartChallenge">Restart the challenge</span></div>
       </div>
       <div class="help-section">
-        <div class="help-title">📊 Graph Legend</div>
-        <div class="help-row"><span style="color:var(--accent)">● Green</span><span>main/master branch</span></div>
-        <div class="help-row"><span style="color:var(--accent-purple)">● Purple</span><span>feature branch</span></div>
-        <div class="help-row"><span style="color:var(--accent-red)">● Red</span><span>hotfix branch</span></div>
-        <div class="help-row"><span style="color:var(--accent-blue)">● Blue</span><span>develop branch</span></div>
-        <div class="help-row"><span style="color:#fff">◆ Diamond</span><span>merge commit</span></div>
-        <div class="help-row"><span style="color:var(--accent)">◉ Ring</span><span>current HEAD</span></div>
+        <div class="help-title" data-i18n="graphLegend">📊 Graph Legend</div>
+        <div class="help-row"><span style="color:var(--accent)">● Green</span><span data-i18n="mainBranch">main/master branch</span></div>
+        <div class="help-row"><span style="color:var(--accent-purple)">● Purple</span><span data-i18n="featureBranch">feature branch</span></div>
+        <div class="help-row"><span style="color:var(--accent-red)">● Red</span><span data-i18n="hotfixBranch">hotfix branch</span></div>
+        <div class="help-row"><span style="color:var(--accent-blue)">● Blue</span><span data-i18n="developBranch">develop branch</span></div>
+        <div class="help-row"><span style="color:#fff">◆ Diamond</span><span data-i18n="mergeCommit">merge commit</span></div>
+        <div class="help-row"><span style="color:var(--accent)">◉ Ring</span><span data-i18n="currentHead">current HEAD</span></div>
       </div>
     </div>
   </div>
@@ -351,7 +351,7 @@
         <button class="intro-nav-btn" id="intro-next" title="Next challenge">→</button>
       </div>
       <button class="intro-start-btn" id="intro-start">
-        Start Challenge <span class="checkmark">✔</span>
+        <span data-i18n="startChallenge">Start Challenge</span> <span class="checkmark">✔</span>
       </button>
     </div>
   </div>
