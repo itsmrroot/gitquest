@@ -2319,3 +2319,106 @@ kbd {
 .intro-dot.done {
   background: var(--text-muted);
 }
+/* ══════════════════════════════════════
+   GEMINI API KEY SETUP
+══════════════════════════════════════ */
+.key-setup {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px 16px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.key-setup-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.key-setup-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.key-setup-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.key-link {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+.key-link:hover {
+  text-decoration: underline;
+}
+
+.key-input {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  outline: none;
+  margin-bottom: 10px;
+  transition: var(--transition);
+}
+
+.key-input:focus {
+  border-color: var(--accent);
+}
+
+.key-save-btn {
+  display: block;
+  width: 100%;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition: var(--transition);
+  margin-bottom: 6px;
+}
+
+.key-save-btn:hover {
+  box-shadow: var(--shadow-glow);
+}
+
+.key-clear-btn {
+  display: block;
+  width: 100%;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  padding: 7px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition: var(--transition);
+  margin-bottom: 10px;
+}
+
+.key-clear-btn:hover {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+.key-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}

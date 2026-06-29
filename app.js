@@ -407,36 +407,30 @@ class GitQuestApp {
     if (!ch) return;
     const box = document.getElementById('mission-ai');
     if (!box) return;
+
+    if (!this._getGeminiKey()) {
+      box.style.display = 'block';
+      box.innerHTML = `<span style="color:var(--accent-yellow)">⚠️ Add your free Gemini API key in the <strong>AI Tutor</strong> tab first.</span>`;
+      return;
+    }
+
     box.style.display = 'block';
     box.innerHTML = '<div class="ai-typing"><span></span><span></span><span></span></div>';
 
     const state = this.engine.getState();
     const langName = window.currentLang().name;
-    const prompt = `You are a Git expert tutor inside GitQuest. Respond in ${langName}.
-Challenge: "${ch.name}" — ${ch.description}
+    const sys = `You are a Git expert tutor inside GitQuest. Respond in ${langName}. Be concise, use backtick code formatting, be encouraging.`;
+    const prompt = `Challenge: "${ch.name}" — ${ch.description}
 Goals: ${ch.goals.map(g => g.text).join('; ')}
-Student commands: ${this.cmdsThisChallenge.slice(-5).join(', ') || 'none yet'}
+Student commands so far: ${this.cmdsThisChallenge.slice(-5).join(', ') || 'none yet'}
 Branches: ${Object.keys(state.branches).join(', ')} | HEAD: ${state.headBranch || 'detached'}
-Give a helpful 3-sentence explanation. Use backtick code formatting. End with one concrete command to try next.`;
+Give a helpful 3-sentence explanation. End with one concrete command to try next.`;
 
     try {
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6', max_tokens: 1000,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
-      const data = await resp.json();
-      const text = data.content?.find(b => b.type === 'text')?.text || 'No response.';
-      box.textContent = text;
+      const text = await this._callGemini(prompt, sys);
+      box.innerHTML = this._fmtAI(text || 'No response.');
     } catch(e) {
-      box.textContent = t('aiUnavailable') || 'AI unavailable. Check your connection.';
+      box.innerHTML = `<span style="color:var(--accent-red)">AI error: ${this._esc(e.message)}</span>`;
     }
   }
 
@@ -661,6 +655,13 @@ Give a helpful 3-sentence explanation. Use backtick code formatting. End with on
     document.getElementById('ai-input')?.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this._sendChat(); }
     });
+
+    // Show key setup if no Gemini key is stored yet
+    if (!this._getGeminiKey()) {
+      this._renderKeySetup();
+    } else {
+      this._setAIStatus('online');
+    }
   }
 
   // ══════════════════════════════════════
@@ -884,6 +885,47 @@ Give a helpful 3-sentence explanation. Use backtick code formatting. End with on
   }
 
   // ══════════════════════════════════════
+  // GEMINI API
+  // ══════════════════════════════════════
+  _getGeminiKey() {
+    return localStorage.getItem('gq_gemini_key') || '';
+  }
+
+  async _callGemini(userPrompt, systemPrompt, history = []) {
+    const key = this._getGeminiKey();
+    if (!key) throw new Error('No API key set.');
+
+    // Convert chat history to Gemini format (role: 'user'|'model')
+    const contents = [
+      ...history.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+      })),
+      { role: 'user', parts: [{ text: userPrompt }] }
+    ];
+
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents
+        })
+      }
+    );
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+  }
+
+  // ══════════════════════════════════════
   // AI CHAT (right panel)
   // ══════════════════════════════════════
   _setAIStatus(state) {
@@ -894,8 +936,50 @@ Give a helpful 3-sentence explanation. Use backtick code formatting. End with on
     if (label) {
       label.textContent = state === 'loading' ? 'Thinking...' :
                           state === 'error'   ? 'Connection error' :
-                          'GitQuest AI — powered by Claude';
+                          'GitQuest AI — powered by Gemini';
     }
+  }
+
+  _renderKeySetup() {
+    const panel = document.getElementById('ai-chat-content');
+    if (!panel) return;
+    const existing = panel.querySelector('.key-setup');
+    if (existing) return; // already shown
+
+    const key = this._getGeminiKey();
+    const setup = document.createElement('div');
+    setup.className = 'key-setup';
+    setup.innerHTML = `
+      <div class="key-setup-icon">🤖</div>
+      <div class="key-setup-title">Connect AI Tutor</div>
+      <div class="key-setup-desc">Paste your <strong>free</strong> Google Gemini API key below.<br>Get one at <a class="key-link" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com</a> — no credit card needed.</div>
+      <input class="key-input" id="gemini-key-input" type="password" placeholder="AIzaSy..." value="${this._esc(key)}" spellcheck="false" />
+      <button class="key-save-btn" id="key-save-btn">✓ Save Key</button>
+      ${key ? '<button class="key-clear-btn" id="key-clear-btn">✕ Remove Key</button>' : ''}
+      <div class="key-note">🔒 Stored only in your browser's localStorage. Free tier: 1,500 requests/day.</div>
+    `;
+    panel.insertBefore(setup, panel.firstChild);
+
+    document.getElementById('key-save-btn')?.addEventListener('click', () => {
+      const val = document.getElementById('gemini-key-input')?.value.trim();
+      if (!val) return;
+      localStorage.setItem('gq_gemini_key', val);
+      setup.remove();
+      this._setAIStatus('online');
+      const msgs = document.getElementById('ai-chat-messages');
+      if (msgs) {
+        const note = document.createElement('div');
+        note.className = 'ai-msg assistant';
+        note.innerHTML = `<div class="msg-label">GitQuest AI</div>✅ API key saved! Ask me anything about Git.`;
+        msgs.appendChild(note);
+      }
+    });
+
+    document.getElementById('key-clear-btn')?.addEventListener('click', () => {
+      localStorage.removeItem('gq_gemini_key');
+      setup.remove();
+      this._renderKeySetup();
+    });
   }
 
   async _sendChat() {
@@ -906,6 +990,15 @@ Give a helpful 3-sentence explanation. Use backtick code formatting. End with on
     const text = inp.value.trim();
     if (!text) return;
 
+    if (!this._getGeminiKey()) {
+      this._renderKeySetup();
+      document.querySelectorAll('.panel-tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.panel-content').forEach(x => x.classList.remove('active'));
+      document.querySelector('.panel-tab[data-tab="ai-chat"]')?.classList.add('active');
+      document.getElementById('ai-chat-content')?.classList.add('active');
+      return;
+    }
+
     inp.value = '';
     if (btn) btn.disabled = true;
     this._setAIStatus('loading');
@@ -913,12 +1006,9 @@ Give a helpful 3-sentence explanation. Use backtick code formatting. End with on
     this.aiHistory.push({ role: 'user', content: text });
     this._renderChat(msgs);
 
-    // Typing indicator
     const loading = document.createElement('div');
     loading.className = 'ai-msg assistant';
-    loading.innerHTML = `
-      <div class="msg-label">${t('ai') || 'GitQuest AI'}</div>
-      <div class="ai-typing"><span></span><span></span><span></span></div>`;
+    loading.innerHTML = `<div class="msg-label">${t('ai') || 'GitQuest AI'}</div><div class="ai-typing"><span></span><span></span><span></span></div>`;
     msgs.appendChild(loading);
     msgs.scrollTop = msgs.scrollHeight;
 
@@ -927,41 +1017,27 @@ Give a helpful 3-sentence explanation. Use backtick code formatting. End with on
     const sys = `You are an expert Git tutor inside GitQuest, an interactive Git learning platform. Respond in ${langName}.
 Current repo: branches=[${Object.keys(state.branches).join(', ')}], HEAD=${state.headBranch || 'detached HEAD'}.
 ${this.currentChallenge ? `Active challenge: "${this.currentChallenge.name}" — ${this.currentChallenge.description}` : 'User is in sandbox mode (free exploration).'}
-Be concise (2-4 sentences max), use \`backtick\` code formatting for commands, be encouraging and specific. Never use markdown headers.`;
+Be concise (2-4 sentences max), use backtick code formatting for commands, be encouraging and specific. Never use markdown headers.`;
 
     try {
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 1000,
-          system: sys,
-          messages: this.aiHistory
-        })
-      });
-
-      if (!resp.ok) {
-        throw new Error(`API error: ${resp.status}`);
-      }
-
-      const data = await resp.json();
-      const reply = data.content?.find(b => b.type === 'text')?.text || 'No response received.';
-      this.aiHistory.push({ role: 'assistant', content: reply });
+      // Pass all history except the last user message (already appended above)
+      const historyWithoutLast = this.aiHistory.slice(0, -1);
+      const reply = await this._callGemini(text, sys, historyWithoutLast);
+      this.aiHistory.push({ role: 'assistant', content: reply || 'No response received.' });
       loading.remove();
       this._renderChat(msgs);
       this._setAIStatus('online');
     } catch(e) {
       loading.remove();
+      this.aiHistory.pop(); // remove the failed user message from history
       const err = document.createElement('div');
       err.className = 'ai-msg assistant';
-      err.innerHTML = `<div class="msg-label">${t('ai') || 'GitQuest AI'}</div>${t('aiUnavailable') || 'AI unavailable. Check your connection.'}`;
+      err.innerHTML = `<div class="msg-label">GitQuest AI</div><span style="color:var(--accent-red)">Error: ${this._esc(e.message)}</span>`;
       msgs.appendChild(err);
       this._setAIStatus('error');
+      if (e.message.includes('API_KEY') || e.message.includes('400') || e.message.includes('401')) {
+        this._renderKeySetup();
+      }
     }
 
     if (btn) btn.disabled = false;
