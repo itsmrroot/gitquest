@@ -2547,3 +2547,64 @@ kbd {
   filter: brightness(1.15);
   box-shadow: 0 0 12px rgba(248,81,73,0.4);
 }
+
+/* ══════════════════════════════════════
+   GOAL TO REACH PANEL
+══════════════════════════════════════ */
+#goal-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 224px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  z-index: 50;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.goal-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  background: var(--bg-tertiary, var(--bg-panel));
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+
+.goal-hide-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  border-radius: 3px;
+  transition: var(--transition);
+}
+
+.goal-hide-btn:hover {
+  color: var(--text-primary);
+  background: var(--border);
+}
+
+.goal-note {
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 6px 10px 0;
+  line-height: 1.4;
+  font-style: italic;
+}
+
+#goal-svg {
+  display: block;
+  width: 100%;
+  padding: 4px 0 6px;
+}

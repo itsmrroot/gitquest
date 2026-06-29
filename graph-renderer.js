@@ -42,8 +42,9 @@ class GraphRenderer {
     return pal[h % pal.length];
   }
 
-  render() {
-    const state = this.engine.getState();
+  render(stateOverride) {
+    const state = stateOverride || (this.engine ? this.engine.getState() : null);
+    if (!state) return;
     const { commits, branches, HEAD, headBranch, tags } = state;
 
     // ── LAYOUT ──

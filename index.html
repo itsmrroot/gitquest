@@ -107,6 +107,18 @@
       <div class="canvas-hint" data-i18n="draghint">Drag to pan · Hover commits for details</div>
       <div class="node-tooltip" id="node-tooltip"></div>
       <div id="autocomplete"></div>
+
+      <!-- ── GOAL TO REACH PANEL ── -->
+      <div id="goal-panel" style="display:none">
+        <div class="goal-panel-header">
+          <span>🎯 Goal To Reach</span>
+          <button class="goal-hide-btn" id="goal-toggle" title="Collapse / expand">−</button>
+        </div>
+        <div id="goal-panel-body">
+          <div id="goal-note" class="goal-note"></div>
+          <svg id="goal-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+      </div>
     </div>
 
     <div id="terminal-area">
@@ -322,6 +334,7 @@
 <script src="challenges.js"></script>
 <script src="i18n.js"></script>
 <script src="intros.js"></script>
+<script src="goal-graphs.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

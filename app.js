@@ -32,6 +32,11 @@ class GitQuestApp {
       this.renderer.render();
     }
 
+    const goalSvg = document.getElementById('goal-svg');
+    if (goalSvg) {
+      this.goalRenderer = new GraphRenderer(goalSvg, null);
+    }
+
     this._buildSidebar();
     this._bindEvents();
     this._updateXP();
@@ -215,6 +220,7 @@ class GitQuestApp {
     this.renderer?.render();
     this._buildSidebar();
     this._renderMission(challenge);
+    this._showGoalPanel(challenge.id);
 
     const out = document.getElementById('terminal-output');
     if (out) out.innerHTML = '';
@@ -468,6 +474,15 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
 
     document.getElementById('tool-help')?.addEventListener('click', () => {
       document.getElementById('modal-help')?.classList.add('show');
+    });
+
+    document.getElementById('goal-toggle')?.addEventListener('click', () => {
+      const body = document.getElementById('goal-panel-body');
+      const btn  = document.getElementById('goal-toggle');
+      if (!body) return;
+      const collapsed = body.style.display === 'none';
+      body.style.display = collapsed ? 'block' : 'none';
+      btn.textContent = collapsed ? '−' : '+';
     });
 
     document.getElementById('tool-reset-all')?.addEventListener('click', () => {
@@ -804,6 +819,35 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     if (out) out.innerHTML = '';
     this._log('info', t('sandboxMode'));
     this._renderSandboxPanel();
+    document.getElementById('goal-panel')?.style && (document.getElementById('goal-panel').style.display = 'none');
+  }
+
+  _showGoalPanel(challengeId) {
+    const panel   = document.getElementById('goal-panel');
+    const notEl   = document.getElementById('goal-note');
+    const goalSvg = document.getElementById('goal-svg');
+    if (!panel || !goalSvg) return;
+
+    const goal = (window.GOAL_GRAPHS || {})[challengeId];
+    if (!goal) { panel.style.display = 'none'; return; }
+
+    panel.style.display = 'block';
+    if (notEl) notEl.textContent = goal.note || '';
+
+    // Size the SVG to fit the goal graph
+    const commitCount = Object.keys(goal.commits).length;
+    const branchCount = Object.keys(goal.branches).length;
+    const h = Math.max(160, commitCount * 46 + branchCount * 18 + 30);
+    goalSvg.setAttribute('width',  '220');
+    goalSvg.setAttribute('height', String(h));
+    goalSvg.setAttribute('viewBox', `0 0 220 ${h}`);
+
+    // Reset pan so goal graph is always fully visible
+    if (this.goalRenderer) {
+      this.goalRenderer.panX = 0;
+      this.goalRenderer.panY = 0;
+      this.goalRenderer.render(goal);
+    }
   }
 
   _renderSandboxPanel() {
