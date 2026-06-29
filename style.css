@@ -116,6 +116,7 @@ body {
   grid-template-rows: 48px 1fr;
   grid-template-columns: 280px 1fr 320px;
   height: 100vh;
+  transition: grid-template-columns 0.25s ease;
 }
 
 /* ══════════════════════════════════════
@@ -2901,5 +2902,25 @@ kbd {
   /* Hide the canvas pan hint to save space */
   .canvas-hint {
     display: none;
+  }
+}
+
+/* ══════════════════════════════════════
+   SIDEBAR COLLAPSE — desktop
+   Triggered on challenge click; toggle with Levels button
+══════════════════════════════════════ */
+@media (min-width: 1025px) {
+  #app.sidebar-collapsed {
+    grid-template-columns: 0 1fr 320px;
+  }
+
+  #app.sidebar-collapsed #sidebar {
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  [dir="rtl"] #app.sidebar-collapsed {
+    grid-template-columns: 320px 1fr 0;
   }
 }

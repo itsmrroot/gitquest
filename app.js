@@ -448,11 +448,10 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
   // ══════════════════════════════════════
   _bindToolbar() {
     document.getElementById('tool-levels')?.addEventListener('click', () => {
-      if (window.innerWidth <= 1024) {
-        this._toggleSidebar();
-      } else {
-        const sidebar = document.getElementById('sidebar');
-        if (sidebar) sidebar.scrollTo({ top: 0, behavior: 'smooth' });
+      this._toggleSidebar();
+      // When expanding sidebar on desktop, scroll it back to the top
+      if (window.innerWidth > 1024 && !document.getElementById('app')?.classList.contains('sidebar-collapsed')) {
+        document.getElementById('sidebar')?.scrollTo({ top: 0, behavior: 'smooth' });
       }
     });
 
@@ -1306,6 +1305,10 @@ Be concise (2-4 sentences max), use backtick code formatting for commands, be en
   }
 
   _toggleSidebar() {
+    if (window.innerWidth > 1024) {
+      document.getElementById('app')?.classList.toggle('sidebar-collapsed');
+      return;
+    }
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     if (sidebar?.classList.contains('open')) {
@@ -1317,6 +1320,10 @@ Be concise (2-4 sentences max), use backtick code formatting for commands, be en
   }
 
   _closeSidebar() {
+    if (window.innerWidth > 1024) {
+      document.getElementById('app')?.classList.add('sidebar-collapsed');
+      return;
+    }
     document.getElementById('sidebar')?.classList.remove('open');
     document.getElementById('sidebar-overlay')?.classList.remove('show');
   }
