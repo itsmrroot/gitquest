@@ -331,7 +331,7 @@ class GitQuestApp {
 
     // Prev/Next navigation
     const allChallenges = [];
-    TIERS.forEach(t => t.challenges.forEach(c => allChallenges.push({ tier: t, challenge: c })));
+    TIERS.forEach(tier_ => tier_.challenges.forEach(c => allChallenges.push({ tier: tier_, challenge: c })));
     const curIdx = allChallenges.findIndex(x => x.challenge.id === challenge.id);
 
     const prevBtn = document.getElementById('intro-prev');
@@ -554,7 +554,6 @@ Give a helpful 3-sentence explanation. Use backtick code formatting. End with on
       return;
     }
     const snapshot = this.undoStack.pop();
-    // Restore engine state
     this.engine.commits = snapshot.commits;
     this.engine.branches = snapshot.branches;
     this.engine.HEAD = snapshot.HEAD;
@@ -563,12 +562,13 @@ Give a helpful 3-sentence explanation. Use backtick code formatting. End with on
     this.engine.staging = snapshot.staging;
     this.renderer?.render();
 
-    // Remove last command from challenge history
     this.cmdsThisChallenge.pop();
     this._log('info', '↩ Undid last command.');
 
     const pl = document.getElementById('prompt-branch');
     if (pl) pl.textContent = this.engine.headBranch || '(detached)';
+
+    if (this.mode === 'learn' && this.currentChallenge) this._checkGoals();
   }
 
   _saveSnapshot() {
@@ -670,8 +670,10 @@ Give a helpful 3-sentence explanation. Use backtick code formatting. End with on
     const input = raw.trim();
     if (!input) return;
 
-    // Save snapshot before executing (for undo)
-    this._saveSnapshot();
+    // Save snapshot only for state-changing commands (skip read-only ones)
+    const sub = input.split(/\s+/)[1];
+    const readOnly = new Set(['log', 'status', 'diff', 'help']);
+    if (!readOnly.has(sub)) this._saveSnapshot();
 
     this.cmdHistory.push(input);
     this.histIdx = -1;
