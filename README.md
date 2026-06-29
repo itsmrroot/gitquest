@@ -2,7 +2,6 @@
 
 > The most powerful interactive Git learning platform. Visual, AI-powered, and built for real-world mastery.
 
-![GitQuest Screenshot](assets/screenshot.png)
 
 ## 🚀 Live Demo
 
