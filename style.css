@@ -1202,8 +1202,6 @@ body {
   cursor: pointer;
 }
 
-/* Light mode SVG text adjustment */
-[data-theme="light"] #git-canvas text {}
 
 /* ══════════════════════════════════════
    TOOLBAR (learnGitBranching style)
@@ -2319,6 +2317,7 @@ kbd {
 .intro-dot.done {
   background: var(--text-muted);
 }
+
 /* ══════════════════════════════════════
    GEMINI API KEY SETUP
 ══════════════════════════════════════ */
@@ -2545,7 +2544,7 @@ kbd {
 
 .reset-confirm-btn:hover {
   filter: brightness(1.15);
-  box-shadow: 0 0 12px rgba(248,81,73,0.4);
+  box-shadow: 0 0 12px rgba(248, 81, 73, 0.4);
 }
 
 /* ══════════════════════════════════════
@@ -2555,7 +2554,7 @@ kbd {
   position: absolute;
   top: 12px;
   right: 12px;
-  width: 224px;
+  width: 300px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -2603,7 +2602,7 @@ kbd {
 
 #goal-svg {
   display: block;
-  width: 100%;
+  margin: 0 auto;
   padding: 4px 0 6px;
 }
 
@@ -2611,6 +2610,7 @@ kbd {
 .goal-panel-header {
   cursor: grab;
 }
+
 .goal-panel-header:active {
   cursor: grabbing;
 }
@@ -2619,7 +2619,8 @@ kbd {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  pointer-events: none; /* title doesn't block drag */
+  pointer-events: none;
+  /* title doesn't block drag */
 }
 
 .goal-panel-btns {
@@ -2668,7 +2669,7 @@ kbd {
   cursor: pointer;
   z-index: 50;
   transition: var(--transition);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 #goal-reopen:hover {

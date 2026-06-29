@@ -895,14 +895,15 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     // Size the SVG to fit the goal graph
     const commitCount = Object.keys(goal.commits).length;
     const branchCount = Object.keys(goal.branches).length;
-    const hRaw = Math.max(160, commitCount * 46 + branchCount * 18 + 30);
-    // Each commit occupies 100px horizontally (OFFSET_X=50, NODE_DX=100)
-    const DISPLAY_W = 220;
-    const w = Math.max(DISPLAY_W, commitCount * 100);
-    const displayH = Math.round(hRaw * DISPLAY_W / w);
-    goalSvg.setAttribute('width',  String(DISPLAY_W));
-    goalSvg.setAttribute('height', String(Math.max(displayH, 80)));
-    goalSvg.setAttribute('viewBox', `0 0 ${w} ${hRaw}`);
+    // Natural graph extents matching renderer constants (OFFSET_X=50, NODE_DX=100, OFFSET_Y=50, NODE_DY=72)
+    const vbW = Math.max(130, commitCount * 100 + 30);
+    const vbH = Math.max(110, (branchCount - 1) * 72 + 100);
+    // Scale to fill 294px content area; never upscale past 1.3× for tiny graphs
+    const CONTENT_W = 294;
+    const scale = Math.min(1.3, CONTENT_W / vbW);
+    goalSvg.style.width  = Math.round(vbW * scale) + 'px';
+    goalSvg.style.height = Math.round(vbH * scale) + 'px';
+    goalSvg.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`);
 
     // Reset pan so goal graph is always fully visible
     if (this.goalRenderer) {
