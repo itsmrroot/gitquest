@@ -186,7 +186,10 @@ class GitQuestApp {
             <div class="challenge-meta">${ch.difficulty}${isLocked ? ' 🔒' : ''}</div>
           </div>
           <div class="challenge-xp">+${ch.xp}XP</div>`;
-        if (!isLocked) item.addEventListener('click', () => this._loadChallenge(tier, ch));
+        if (!isLocked) item.addEventListener('click', () => {
+          this._loadChallenge(tier, ch);
+          this._closeSidebar();
+        });
         list.appendChild(item);
       });
       el.appendChild(list);
@@ -445,9 +448,12 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
   // ══════════════════════════════════════
   _bindToolbar() {
     document.getElementById('tool-levels')?.addEventListener('click', () => {
-      // Scroll sidebar into view / toggle
-      const sidebar = document.getElementById('sidebar');
-      if (sidebar) sidebar.scrollTo({ top: 0, behavior: 'smooth' });
+      if (window.innerWidth <= 1024) {
+        this._toggleSidebar();
+      } else {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) sidebar.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     });
 
     document.getElementById('tool-objective')?.addEventListener('click', () => {
@@ -477,6 +483,7 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     });
 
     this._bindGoalPanel();
+    this._bindMobileNav();
 
     document.getElementById('tool-reset-all')?.addEventListener('click', () => {
       document.getElementById('modal-reset-all')?.classList.add('show');
@@ -890,6 +897,7 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     if (!goal) { panel.style.display = 'none'; return; }
 
     panel.style.display = 'block';
+    document.getElementById('goal-reopen')?.style.setProperty('display', 'none');
     if (notEl) notEl.textContent = goal.note || '';
 
     // Size the SVG to fit the goal graph
@@ -898,9 +906,9 @@ Give a helpful 3-sentence explanation. End with one concrete command to try next
     // Natural graph extents matching renderer constants (OFFSET_X=50, NODE_DX=100, OFFSET_Y=50, NODE_DY=72)
     const vbW = Math.max(130, commitCount * 100 + 30);
     const vbH = Math.max(110, (branchCount - 1) * 72 + 100);
-    // Scale to fill 294px content area; never upscale past 1.3× for tiny graphs
+    // Scale to fill 294px content area; floor at 0.25 so large graphs remain legible
     const CONTENT_W = 294;
-    const scale = Math.min(1.3, CONTENT_W / vbW);
+    const scale = Math.max(0.25, Math.min(1.3, CONTENT_W / vbW));
     goalSvg.style.width  = Math.round(vbW * scale) + 'px';
     goalSvg.style.height = Math.round(vbH * scale) + 'px';
     goalSvg.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`);
@@ -1278,6 +1286,66 @@ Be concise (2-4 sentences max), use backtick code formatting for commands, be en
     return this._esc(text)
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\n/g, '<br>');
+  }
+
+  // ══════════════════════════════════════
+  // MOBILE / RESPONSIVE
+  // ══════════════════════════════════════
+  _bindMobileNav() {
+    document.getElementById('sidebar-overlay')?.addEventListener('click', () => {
+      this._closeSidebar();
+    });
+
+    document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this._showMobilePanel(btn.dataset.panel);
+      });
+    });
+  }
+
+  _toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar?.classList.contains('open')) {
+      this._closeSidebar();
+    } else {
+      sidebar?.classList.add('open');
+      overlay?.classList.add('show');
+    }
+  }
+
+  _closeSidebar() {
+    document.getElementById('sidebar')?.classList.remove('open');
+    document.getElementById('sidebar-overlay')?.classList.remove('show');
+  }
+
+  _showMobilePanel(panel) {
+    const rightPanel = document.getElementById('right-panel');
+    this._closeSidebar();
+    switch (panel) {
+      case 'graph':
+        rightPanel?.classList.remove('open');
+        break;
+      case 'challenges':
+        this._toggleSidebar();
+        break;
+      case 'mission':
+        rightPanel?.classList.add('open');
+        document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel-content').forEach(c => c.classList.remove('active'));
+        document.querySelector('.panel-tab[data-tab="mission"]')?.classList.add('active');
+        document.getElementById('mission-content')?.classList.add('active');
+        break;
+      case 'ai':
+        rightPanel?.classList.add('open');
+        document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel-content').forEach(c => c.classList.remove('active'));
+        document.querySelector('.panel-tab[data-tab="ai-chat"]')?.classList.add('active');
+        document.getElementById('ai-chat-content')?.classList.add('active');
+        break;
+    }
   }
 }
 

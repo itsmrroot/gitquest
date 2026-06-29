@@ -2572,24 +2572,11 @@ kbd {
   background: var(--bg-tertiary, var(--bg-panel));
   border-bottom: 1px solid var(--border);
   user-select: none;
+  cursor: grab;
 }
 
-/* legacy - kept for safety */
-.goal-hide-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0 2px;
-  border-radius: 3px;
-  transition: var(--transition);
-}
-
-.goal-hide-btn:hover {
-  color: var(--text-primary);
-  background: var(--border);
+.goal-panel-header:active {
+  cursor: grabbing;
 }
 
 .goal-note {
@@ -2604,15 +2591,6 @@ kbd {
   display: block;
   margin: 0 auto;
   padding: 4px 0 6px;
-}
-
-/* ── Goal panel drag + close upgrades ── */
-.goal-panel-header {
-  cursor: grab;
-}
-
-.goal-panel-header:active {
-  cursor: grabbing;
 }
 
 .goal-panel-title {
@@ -2676,4 +2654,252 @@ kbd {
   border-color: var(--accent);
   color: var(--accent);
   background: rgba(57, 211, 83, 0.08);
+}
+
+/* ══════════════════════════════════════
+   MOBILE NAV (hidden on desktop)
+══════════════════════════════════════ */
+#mobile-nav {
+  display: none;
+}
+
+.mobile-nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: var(--transition);
+  padding: 4px 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-nav-btn.active {
+  color: var(--accent);
+}
+
+.mobile-nav-icon {
+  font-size: 19px;
+  line-height: 1;
+}
+
+/* Sidebar overlay (hidden on desktop) */
+#sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 199;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — TABLET (769px – 1024px)
+══════════════════════════════════════ */
+@media (max-width: 1024px) {
+  #app {
+    grid-template-columns: 1fr 260px;
+  }
+
+  /* Sidebar becomes a fixed left-edge drawer */
+  #sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 260px;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
+  }
+
+  #sidebar.open {
+    transform: translateX(0);
+  }
+
+  [dir="rtl"] #sidebar {
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
+  }
+
+  [dir="rtl"] #sidebar.open {
+    transform: translateX(0);
+  }
+
+  #sidebar-overlay {
+    display: block;
+    pointer-events: none;
+  }
+
+  #sidebar-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #toolbar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  #toolbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — MOBILE (≤ 768px)
+══════════════════════════════════════ */
+@media (max-width: 768px) {
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  #header {
+    flex-shrink: 0;
+    grid-column: unset;
+    padding: 0 10px;
+    gap: 6px;
+  }
+
+  /* Hide XP/level badges to save header space */
+  .xp-badge,
+  .level-badge {
+    display: none;
+  }
+
+  /* Compact lang picker */
+  #lang-name {
+    display: none;
+  }
+
+  .lang-current .arrow {
+    display: none;
+  }
+
+  #toolbar {
+    flex-shrink: 0;
+    grid-column: unset;
+    grid-row: unset;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    white-space: nowrap;
+  }
+
+  #toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Icon-only toolbar on small screens */
+  .tool-btn span:not(.tool-icon) {
+    display: none;
+  }
+
+  .tool-icon {
+    font-size: 16px;
+  }
+
+  #main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    grid-row: unset;
+    grid-column: unset;
+  }
+
+  #graph-area {
+    flex: 1;
+    min-height: 0;
+  }
+
+  #terminal-area {
+    flex-shrink: 0;
+  }
+
+  #terminal-output {
+    height: 80px;
+  }
+
+  /* Right panel slides in from the right as a full-height overlay */
+  #right-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 56px;
+    width: 100%;
+    max-width: 360px;
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    z-index: 150;
+    grid-row: unset;
+    grid-column: unset;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
+  }
+
+  #right-panel.open {
+    transform: translateX(0);
+  }
+
+  [dir="rtl"] #right-panel {
+    right: auto;
+    left: 0;
+    transform: translateX(-100%);
+  }
+
+  [dir="rtl"] #right-panel.open {
+    transform: translateX(0);
+  }
+
+  /* Sidebar drawer on mobile sits above the bottom nav */
+  #sidebar {
+    bottom: 56px;
+    width: min(280px, 85vw);
+  }
+
+  /* Mobile bottom navigation */
+  #mobile-nav {
+    display: flex;
+    height: 56px;
+    flex-shrink: 0;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Goal panel adapts to narrow screens */
+  #goal-panel {
+    right: 8px;
+    width: min(300px, calc(100vw - 16px));
+    max-width: none;
+  }
+
+  /* Autocomplete above bottom nav */
+  #autocomplete {
+    left: 8px;
+    right: 8px;
+    min-width: unset;
+    bottom: 64px;
+  }
+
+  /* Hide the canvas pan hint to save space */
+  .canvas-hint {
+    display: none;
+  }
 }

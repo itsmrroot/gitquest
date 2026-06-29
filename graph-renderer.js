@@ -27,6 +27,22 @@ class GraphRenderer {
       if (g) g.setAttribute('transform', `translate(${this.panX},${this.panY})`);
     });
     window.addEventListener('mouseup', () => { drag = false; });
+
+    // Touch panning (main canvas only; goal renderer has null engine)
+    if (!this.engine) return;
+    this.svg.addEventListener('touchstart', e => {
+      if (e.touches.length !== 1) return;
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+      spx = this.panX; spy = this.panY;
+    }, { passive: true });
+    this.svg.addEventListener('touchmove', e => {
+      if (e.touches.length !== 1) return;
+      e.preventDefault();
+      this.panX = spx + (e.touches[0].clientX - sx);
+      this.panY = spy + (e.touches[0].clientY - sy);
+      const g = this.svg.querySelector('g.root');
+      if (g) g.setAttribute('transform', `translate(${this.panX},${this.panY})`);
+    }, { passive: false });
   }
 
   _branchColor(name) {
