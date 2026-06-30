@@ -586,9 +586,13 @@ class GitQuestApp {
   _bindEvents() {
     this._bindToolbar();
 
-    // Click anywhere in the terminal area to focus the input
-    document.getElementById('terminal-area')?.addEventListener('click', () => {
-      document.getElementById('cmd-input')?.focus();
+    // Click anywhere on the page to focus the command input
+    document.addEventListener('click', (e) => {
+      const input = document.getElementById('cmd-input');
+      if (!input || e.target === input) return;
+      const sel = window.getSelection();
+      if (sel && sel.toString().length > 0) return; // don't steal focus while selecting text
+      input.focus();
     });
 
     const input = document.getElementById('cmd-input');
