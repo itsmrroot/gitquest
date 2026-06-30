@@ -10,6 +10,7 @@ class GraphRenderer {
     this.panX = 0;
     this.panY = 0;
     this.tooltip = document.getElementById('node-tooltip');
+    this._prevCommits = null;
     this._setupPan();
   }
 
@@ -62,6 +63,10 @@ class GraphRenderer {
     const state = stateOverride || (this.engine ? this.engine.getState() : null);
     if (!state) return;
     const { commits, branches, HEAD, headBranch, tags } = state;
+
+    const isFirstRender = this._prevCommits === null;
+    const prevIds = isFirstRender ? new Set() : this._prevCommits;
+    this._prevCommits = new Set(Object.keys(commits));
 
     // ── LAYOUT ──
     // Topological sort (oldest first)
@@ -183,6 +188,7 @@ class GraphRenderer {
       nodeEl.setAttribute('stroke', isHead ? '#ffffff' : '#0d1117');
       nodeEl.setAttribute('stroke-width', isHead ? '2.5' : '1.5');
       nodeEl.classList.add('commit-node');
+      if (!isFirstRender && !prevIds.has(cid)) nodeEl.classList.add('node-new');
 
       // Tooltip
       const msg = commit.message;

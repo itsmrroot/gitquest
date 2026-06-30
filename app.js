@@ -745,6 +745,7 @@ class GitQuestApp {
     this.xp += ch.xp;
     localStorage.setItem('gq_xp', this.xp);
     localStorage.setItem('gq_completed', JSON.stringify(this.completedChallenges));
+    this._spawnConfetti();
     this._updateXP();
     this._buildSidebar();
     this._showSuccess(ch);
@@ -764,6 +765,18 @@ class GitQuestApp {
       this._nextChallenge();
     };
     overlay.querySelector('.retry-btn').onclick = () => overlay.classList.remove('show');
+  }
+
+  _spawnConfetti() {
+    const colors = ['#39d353', '#58a6ff', '#bc8cff', '#e3b341', '#f0883e'];
+    for (let i = 0; i < 72; i++) {
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      const size = 6 + Math.random() * 7;
+      el.style.cssText = `left:${Math.random() * 100}vw;top:-10px;width:${size}px;height:${size}px;background:${colors[i % colors.length]};border-radius:${Math.random() > 0.5 ? '50%' : '2px'};animation-duration:${1.5 + Math.random() * 2.5}s;animation-delay:${Math.random() * 0.7}s`;
+      document.body.appendChild(el);
+      el.addEventListener('animationend', () => el.remove());
+    }
   }
 
   _nextChallenge() {
@@ -910,7 +923,30 @@ class GitQuestApp {
   // ══════════════════════════════════════
   _updateXP() {
     const el = document.getElementById('xp-count');
-    if (el) el.textContent = this.xp.toLocaleString() + ' XP';
+    const newXP = this.xp;
+    if (el) {
+      const prevXP = this._prevXP;
+      if (prevXP !== undefined && newXP > prevXP) {
+        const xpBadge = el.closest('.xp-badge');
+        if (xpBadge) {
+          xpBadge.classList.add('xp-bump');
+          xpBadge.addEventListener('animationend', () => xpBadge.classList.remove('xp-bump'), { once: true });
+        }
+        const start = performance.now();
+        const dur = 700;
+        const tick = (now) => {
+          const t = Math.min((now - start) / dur, 1);
+          const eased = 1 - Math.pow(1 - t, 3);
+          el.textContent = Math.round(prevXP + (newXP - prevXP) * eased).toLocaleString() + ' XP';
+          if (t < 1) requestAnimationFrame(tick);
+          else el.textContent = newXP.toLocaleString() + ' XP';
+        };
+        requestAnimationFrame(tick);
+      } else {
+        el.textContent = newXP.toLocaleString() + ' XP';
+      }
+    }
+    this._prevXP = newXP;
     const levels = [
       { min: 0, name: 'Rookie' }, { min: 500, name: 'Contributor' },
       { min: 1200, name: 'Maintainer' }, { min: 2500, name: 'Architect' }, { min: 4000, name: 'Git Wizard' }
@@ -927,7 +963,7 @@ class GitQuestApp {
     const out = document.getElementById('terminal-output');
     if (!out) return;
     const div = document.createElement('div');
-    div.className = `term-${type}`;
+    div.className = `term-${type} term-line-new`;
     div.textContent = text;
     out.appendChild(div);
     out.scrollTop = out.scrollHeight;
@@ -937,8 +973,10 @@ class GitQuestApp {
     const out = document.getElementById('terminal-output');
     if (!out) return;
     const div = document.createElement('div');
+    div.classList.add('term-line-new');
     div.innerHTML = html;
     out.appendChild(div);
+    out.scrollTop = out.scrollHeight;
   }
 
   _esc(s) {
