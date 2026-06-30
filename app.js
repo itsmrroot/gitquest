@@ -805,9 +805,8 @@ class GitQuestApp {
   }
 
   _bindGoalPanel() {
-    const panel   = document.getElementById('goal-panel');
-    const handle  = document.getElementById('goal-drag-handle');
-    const reopen  = document.getElementById('goal-reopen');
+    const panel  = document.getElementById('goal-panel');
+    const reopen = document.getElementById('goal-reopen');
     if (!panel) return;
 
     // ── Minimise / expand ──
@@ -816,7 +815,8 @@ class GitQuestApp {
       const btn  = document.getElementById('goal-toggle');
       if (!body) return;
       const collapsed = body.style.display === 'none';
-      body.style.display = collapsed ? 'block' : 'none';
+      body.style.display = collapsed ? '' : 'none';
+      panel.style.height = collapsed ? '' : '36px';
       if (btn) btn.textContent = collapsed ? '−' : '+';
     });
 
@@ -828,43 +828,7 @@ class GitQuestApp {
 
     reopen?.addEventListener('click', () => {
       reopen.style.display = 'none';
-      panel.style.display = 'block';
-    });
-
-    // ── Drag ──
-    if (!handle) return;
-    let dragging = false, ox = 0, oy = 0;
-
-    handle.addEventListener('mousedown', e => {
-      if (e.target.closest('.goal-panel-btn')) return;
-      dragging = true;
-      handle.style.cursor = 'grabbing';
-      // Switch to fixed so it can roam freely over the whole viewport
-      const rect = panel.getBoundingClientRect();
-      panel.style.position = 'fixed';
-      panel.style.left     = rect.left + 'px';
-      panel.style.top      = rect.top  + 'px';
-      panel.style.right    = 'auto';
-      ox = e.clientX - rect.left;
-      oy = e.clientY - rect.top;
-      e.preventDefault();
-    });
-
-    window.addEventListener('mousemove', e => {
-      if (!dragging) return;
-      let x = e.clientX - ox;
-      let y = e.clientY - oy;
-      // Keep inside viewport
-      x = Math.max(0, Math.min(window.innerWidth  - panel.offsetWidth,  x));
-      y = Math.max(0, Math.min(window.innerHeight - panel.offsetHeight, y));
-      panel.style.left = x + 'px';
-      panel.style.top  = y + 'px';
-    });
-
-    window.addEventListener('mouseup', () => {
-      if (!dragging) return;
-      dragging = false;
-      handle.style.cursor = '';
+      panel.style.display = 'flex';
     });
   }
 
@@ -877,21 +841,21 @@ class GitQuestApp {
     const goal = (window.GOAL_GRAPHS || {})[challengeId];
     if (!goal) { panel.style.display = 'none'; return; }
 
-    panel.style.display = 'block';
+    panel.style.display = 'flex';
     document.getElementById('goal-reopen')?.style.setProperty('display', 'none');
     if (notEl) notEl.textContent = goal.note || '';
 
-    // Size the SVG to fit the goal graph
+    // Size the SVG to fit the goal graph — panel is now inline horizontal bar
     const commitCount = Object.keys(goal.commits).length;
     const branchCount = Object.keys(goal.branches).length;
-    // Natural graph extents matching renderer constants (OFFSET_X=50, NODE_DX=110, OFFSET_Y=60, NODE_DY=80)
-    const vbW = Math.max(130, commitCount * 110 + 30);
-    const vbH = Math.max(120, (branchCount - 1) * 80 + 110);
-    // Scale to fill 294px content area; floor at 0.25 so large graphs remain legible
-    const CONTENT_W = 294;
-    const scale = Math.max(0.25, Math.min(1.3, CONTENT_W / vbW));
-    goalSvg.style.width  = Math.round(vbW * scale) + 'px';
+    // Match renderer constants (OFFSET_X=50, NODE_DX=130, OFFSET_Y=60, NODE_DY=95)
+    const vbW = Math.max(180, commitCount * 130 + 60);
+    const vbH = Math.max(140, (branchCount - 1) * 95 + 140);
+    // Scale to fill available height (panel ~200px, header ~38px, body padding ~12px)
+    const BODY_H = 150;
+    const scale = Math.max(0.3, Math.min(1.8, BODY_H / vbH));
     goalSvg.style.height = Math.round(vbH * scale) + 'px';
+    goalSvg.style.width  = Math.round(vbW * scale) + 'px';
     goalSvg.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`);
 
     // Reset pan so goal graph is always fully visible

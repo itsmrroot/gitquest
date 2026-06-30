@@ -109,24 +109,23 @@
       <div class="canvas-hint" data-i18n="draghint">Drag to pan · Hover commits for details</div>
       <div class="node-tooltip" id="node-tooltip"></div>
       <div id="autocomplete"></div>
+      <!-- Re-open badge floats at bottom of graph when goal panel is closed -->
+      <button id="goal-reopen" style="display:none" title="Show goal graph" data-i18n="goalBtnLabel">🎯 Goal</button>
+    </div>
 
-      <!-- ── GOAL TO REACH PANEL ── -->
-      <div id="goal-panel" style="display:none">
-        <div class="goal-panel-header" id="goal-drag-handle">
-          <span class="goal-panel-title" data-i18n="goalToReach">🎯 Goal To Reach</span>
-          <div class="goal-panel-btns">
-            <button class="goal-panel-btn" id="goal-toggle" title="Minimise">−</button>
-            <button class="goal-panel-btn goal-close-btn" id="goal-close" title="Close">×</button>
-          </div>
-        </div>
-        <div id="goal-panel-body">
-          <div id="goal-note" class="goal-note"></div>
-          <svg id="goal-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    <!-- ── GOAL TO REACH PANEL (inline between graph and terminal) ── -->
+    <div id="goal-panel" style="display:none">
+      <div class="goal-panel-header" id="goal-drag-handle">
+        <span class="goal-panel-title" data-i18n="goalToReach">🎯 Goal To Reach</span>
+        <div id="goal-note" class="goal-note"></div>
+        <div class="goal-panel-btns">
+          <button class="goal-panel-btn" id="goal-toggle" title="Minimise">−</button>
+          <button class="goal-panel-btn goal-close-btn" id="goal-close" title="Close">×</button>
         </div>
       </div>
-
-      <!-- Re-open badge shown when goal panel is closed -->
-      <button id="goal-reopen" style="display:none" title="Show goal graph" data-i18n="goalBtnLabel">🎯 Goal</button>
+      <div id="goal-panel-body">
+        <svg id="goal-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
     </div>
 
     <div id="terminal-area">
