@@ -95,7 +95,7 @@ const TIERS = [
         description: 'Bring your feature work back into main with a merge. This combines the histories of two branches.',
         setup: ['git commit -m "Setup"', 'git checkout -b feature', 'git commit -m "Feature A"', 'git commit -m "Feature B"', 'git checkout main'],
         goals: [
-          { id: 'g1', text: 'Merge feature into main', check: (s, h) => h.some(cmd => cmd === 'git merge feature') }
+          { id: 'g1', text: 'Merge feature into main', check: (s, h) => h.some(cmd => /^git merge( --no-ff)? feature$/.test(cmd.trim())) }
         ],
         hints: [
           'Make sure you are on main first: git checkout main',
@@ -362,7 +362,7 @@ const TIERS = [
         description: 'git bisect uses binary search to find which commit introduced a bug. Simulate the workflow.',
         setup: ['git commit -m "v1"', 'git commit -m "v2"', 'git commit -m "bug introduced"', 'git commit -m "v4"', 'git commit -m "v5"'],
         goals: [
-          { id: 'g1', text: 'Create 5+ commits to bisect', check: (s) => Object.keys(s.commits).length >= 6 },
+          { id: 'g1', text: 'View the commit history with git log', check: (s, h) => h.some(cmd => /^git log/.test(cmd.trim())) },
           { id: 'g2', text: 'Navigate history with checkout', check: (s, h) => h.some(cmd => cmd.includes('checkout HEAD~')) }
         ],
         hints: [

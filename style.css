@@ -2558,7 +2558,7 @@ kbd {
   width: 300px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   z-index: 50;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
   overflow: hidden;

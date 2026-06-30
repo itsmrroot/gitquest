@@ -143,7 +143,7 @@ class GitQuestApp {
     el.innerHTML = '';
     TIERS.forEach(tier => {
       const done = tier.challenges.filter(c => this.completedChallenges.includes(c.id)).length;
-      const pct = Math.round(done / tier.challenges.length * 100);
+      const pct = tier.challenges.length ? Math.round(done / tier.challenges.length * 100) : 0;
 
       const header = document.createElement('div');
       header.className = 'tier-header';
@@ -208,7 +208,7 @@ class GitQuestApp {
     this.setupCommitCount = 0;
     for (const cmd of (challenge.setup || [])) {
       this.engine.execute(cmd);
-      this.setupCommitCount++;
+      if (/^git\s+commit\b/.test(cmd)) this.setupCommitCount++;
     }
     this.renderer?.render();
     this._buildSidebar();
@@ -316,17 +316,15 @@ class GitQuestApp {
           seen.push(challenge.id);
           localStorage.setItem('gq_seen_intros', JSON.stringify(seen));
         }
-        modal.style.display = 'none';
         modal.classList.remove('show');
         this._loadChallenge(tier, challenge, true);
       };
     }
 
     // Close button
-    document.getElementById('intro-close').onclick = () => {
-      modal.style.display = 'none';
+    document.getElementById('intro-close')?.addEventListener('click', () => {
       modal.classList.remove('show');
-    };
+    });
 
     // Prev/Next navigation
     const allChallenges = [];
@@ -356,7 +354,6 @@ class GitQuestApp {
       };
     }
 
-    modal.style.display = 'flex';
     modal.classList.add('show');
   }
 
@@ -463,6 +460,7 @@ class GitQuestApp {
       if (out) out.innerHTML = '';
       this._log('success', t('progressReset'));
       this._updateXP();
+      this.mode = 'learn';
       document.getElementById('modal-reset-all')?.classList.remove('show');
       document.getElementById('goal-panel')?.style.setProperty('display', 'none');
       document.getElementById('goal-reopen')?.style.setProperty('display', 'none');
@@ -519,7 +517,7 @@ class GitQuestApp {
         <div class="solution-warn">${t('trySolving')}</div>
         <div class="solution-steps">
           ${steps.map((hint, i) => `
-            <div class="solution-step" onclick="window.app._pasteCmd('${hint.replace(/'/g,"\\'")}')">
+            <div class="solution-step" data-step="${i}">
               <span class="step-num">${i+1}</span>
               <span class="step-cmd">${this._esc(hint)}</span>
               <span class="step-copy">${t('clickToPaste')} ↗</span>
@@ -527,6 +525,9 @@ class GitQuestApp {
         </div>
         <div class="solution-footer">${t('clickStepToPaste')}</div>
       `;
+      content.querySelectorAll('.solution-step').forEach(el => {
+        el.addEventListener('click', () => this._pasteCmd(steps[+el.dataset.step]));
+      });
     }
     modal.classList.add('show');
   }
@@ -552,6 +553,8 @@ class GitQuestApp {
     this.engine.headBranch = snapshot.headBranch;
     this.engine.tags = snapshot.tags;
     this.engine.staging = snapshot.staging;
+    this.engine.stash = snapshot.stash ?? [];
+    this.engine.remotes = snapshot.remotes ?? {};
     this.renderer?.render();
 
     this.cmdsThisChallenge.pop();
@@ -564,16 +567,16 @@ class GitQuestApp {
   }
 
   _saveSnapshot() {
-    // Deep copy current engine state
     this.undoStack.push({
       commits: JSON.parse(JSON.stringify(this.engine.commits)),
       branches: { ...this.engine.branches },
       HEAD: this.engine.HEAD,
       headBranch: this.engine.headBranch,
       tags: { ...this.engine.tags },
-      staging: [...this.engine.staging]
+      staging: [...this.engine.staging],
+      stash: JSON.parse(JSON.stringify(this.engine.stash || [])),
+      remotes: JSON.parse(JSON.stringify(this.engine.remotes || {}))
     });
-    // Cap undo stack at 20
     if (this.undoStack.length > 20) this.undoStack.shift();
   }
 
@@ -668,10 +671,8 @@ class GitQuestApp {
       return;
     }
 
-    // Save snapshot only for state-changing commands (skip read-only ones)
     const sub = input.split(/\s+/)[1];
     const readOnly = new Set(['log', 'status', 'diff', 'help']);
-    if (!readOnly.has(sub)) this._saveSnapshot();
 
     this.cmdHistory.push(input);
     this.histIdx = -1;
@@ -681,6 +682,8 @@ class GitQuestApp {
     this._logRaw(`<span class="term-prompt">${this._esc(branch)} $</span> <span class="term-cmd">${this._esc(input)}</span>`);
 
     const result = this.engine.execute(input);
+    // Only save undo snapshot when the command actually changed state
+    if (!readOnly.has(sub) && result.ok) this._saveSnapshot();
     if (result.msg) this._log(result.ok ? 'out' : 'err', result.msg);
 
     const out = document.getElementById('terminal-output');
@@ -706,7 +709,9 @@ class GitQuestApp {
       if (chk) {
         if (passed) { chk.classList.add('done'); chk.textContent = '✓'; }
         else { chk.classList.remove('done'); chk.textContent = ''; allDone = false; }
-      } else if (!passed) allDone = false;
+      } else {
+        allDone = false; // missing DOM element = goal UI not ready, never count as done
+      }
     });
 
     if (allDone && !this.completedChallenges.includes(ch.id)) {

@@ -185,11 +185,15 @@ class GitEngine {
     if (flags.amend) {
       const c = this.commits[this.HEAD];
       if (!c) return { ok: false, msg: 'Nothing to amend.' };
+      const oldId = this.HEAD;
       const newId = this._genId();
       const amended = { ...c, id: newId, message: flags.m || c.message };
       this.commits[newId] = amended;
-      delete this.commits[this.HEAD];
-      if (this.headBranch) this.branches[this.headBranch] = newId;
+      // Update every branch pointing to the old commit, not just headBranch
+      Object.entries(this.branches).forEach(([name, id]) => {
+        if (id === oldId) this.branches[name] = newId;
+      });
+      delete this.commits[oldId];
       this.HEAD = newId;
       this._emit('graph-update');
       return { ok: true, msg: `[${this.headBranch || 'HEAD'} ${newId}] ${message} (amended)` };
@@ -300,6 +304,8 @@ class GitEngine {
     const targetId = this._resolveRef(target);
     if (!targetId) return { ok: false, msg: `Branch '${target}' not found.` };
     if (targetId === this.HEAD) return { ok: true, msg: 'Already up to date.' };
+    // Target is already reachable from HEAD — nothing to merge
+    if (this._isAncestor(targetId, this.HEAD)) return { ok: true, msg: 'Already up to date.' };
 
     // Fast-forward?
     if (!flags['no-ff'] && this._isAncestor(this.HEAD, targetId)) {
@@ -340,6 +346,19 @@ class GitEngine {
 
     if (this.headBranch) this.branches[this.headBranch] = base;
     this.HEAD = base;
+
+    // Prune commits no longer reachable from any branch, tag, or HEAD
+    const reachable = new Set();
+    const toVisit = [...Object.values(this.branches), ...Object.values(this.tags), this.HEAD].filter(Boolean);
+    while (toVisit.length) {
+      const id = toVisit.pop();
+      if (reachable.has(id)) continue;
+      reachable.add(id);
+      const c = this.commits[id];
+      if (c?.parents) c.parents.forEach(p => toVisit.push(p));
+    }
+    Object.keys(this.commits).forEach(id => { if (!reachable.has(id)) delete this.commits[id]; });
+
     this._emit('graph-update');
     return { ok: true, msg: `Successfully rebased '${this.headBranch || 'HEAD'}' onto '${target}'.` };
   }
@@ -420,7 +439,7 @@ class GitEngine {
     if (this.headBranch) this.branches[this.headBranch] = nc.id;
     this.HEAD = nc.id;
     this._emit('graph-update');
-    return { ok: true, msg: `[${this.headBranch} ${nc.id}] ${orig?.message}` };
+    return { ok: true, msg: `[${this.headBranch} ${nc.id}] ${nc.message}` };
   }
 
   _gitTag(positional, flags) {
