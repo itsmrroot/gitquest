@@ -577,11 +577,11 @@ body {
 }
 
 #terminal-output {
-  height: 120px;
+  height: 150px;
   overflow-y: auto;
-  padding: 8px 14px;
+  padding: 10px 14px;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.7;
 }
 
@@ -619,13 +619,15 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 14px 9px;
+  padding: 11px 14px 13px;
   border-top: 1px solid var(--border);
+  cursor: text;
 }
 
 .prompt-label {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--accent);
   white-space: nowrap;
 }
@@ -636,7 +638,8 @@ body {
   border: none;
   outline: none;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 500;
   color: var(--text-primary);
   caret-color: var(--accent);
 }
@@ -701,8 +704,8 @@ body {
   flex: 1;
   padding: 10px;
   text-align: center;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   color: var(--text-muted);
   border-bottom: 2px solid transparent;
@@ -731,7 +734,7 @@ body {
 
 /* Mission */
 .mission-title {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   margin-bottom: 6px;
 }
@@ -773,7 +776,7 @@ body {
 }
 
 .mission-desc {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 14px;
@@ -788,7 +791,7 @@ body {
 }
 
 .mission-goal-title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -800,8 +803,8 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 4px 0;
-  font-size: 13px;
+  padding: 5px 0;
+  font-size: 14px;
 }
 
 .goal-check {
@@ -834,7 +837,7 @@ body {
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   margin-bottom: 12px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--accent-blue);
   line-height: 1.5;
 }
@@ -916,7 +919,7 @@ body {
 }
 
 .cheat-group-title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -937,15 +940,16 @@ body {
 
 .cheat-cmd {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--accent-blue);
   white-space: nowrap;
-  min-width: 140px;
+  min-width: 148px;
   flex-shrink: 0;
 }
 
 .cheat-desc {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-muted);
   line-height: 1.4;
 }

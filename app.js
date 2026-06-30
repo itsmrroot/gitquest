@@ -586,6 +586,11 @@ class GitQuestApp {
   _bindEvents() {
     this._bindToolbar();
 
+    // Click anywhere in the terminal area to focus the input
+    document.getElementById('terminal-area')?.addEventListener('click', () => {
+      document.getElementById('cmd-input')?.focus();
+    });
+
     const input = document.getElementById('cmd-input');
     if (!input) return;
 
@@ -660,6 +665,22 @@ class GitQuestApp {
   _handleCmd(raw) {
     const input = raw.trim();
     if (!input) return;
+
+    // Intercept reset command
+    if (input === 'reset') {
+      this.cmdHistory.push(input);
+      this.histIdx = -1;
+      const branch = this.engine.headBranch || '(detached)';
+      this._logRaw(`<span class="term-prompt">${this._esc(branch)} $</span> <span class="term-cmd">${this._esc(input)}</span>`);
+      if (this.currentChallenge) this._loadChallenge(this.currentTier, this.currentChallenge);
+      else {
+        this.engine.reset(); this.renderer?.render();
+        const out = document.getElementById('terminal-output');
+        if (out) out.innerHTML = '';
+        this._log('info', t('repoReset'));
+      }
+      return;
+    }
 
     // Intercept undo before it reaches the engine
     if (input === 'undo' || input === 'git undo') {
@@ -850,9 +871,9 @@ class GitQuestApp {
     // Size the SVG to fit the goal graph
     const commitCount = Object.keys(goal.commits).length;
     const branchCount = Object.keys(goal.branches).length;
-    // Natural graph extents matching renderer constants (OFFSET_X=50, NODE_DX=100, OFFSET_Y=50, NODE_DY=72)
-    const vbW = Math.max(130, commitCount * 100 + 30);
-    const vbH = Math.max(110, (branchCount - 1) * 72 + 100);
+    // Natural graph extents matching renderer constants (OFFSET_X=50, NODE_DX=110, OFFSET_Y=60, NODE_DY=80)
+    const vbW = Math.max(130, commitCount * 110 + 30);
+    const vbH = Math.max(120, (branchCount - 1) * 80 + 110);
     // Scale to fill 294px content area; floor at 0.25 so large graphs remain legible
     const CONTENT_W = 294;
     const scale = Math.max(0.25, Math.min(1.3, CONTENT_W / vbW));
