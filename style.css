@@ -2595,14 +2595,15 @@ kbd {
 
 #goal-panel-body {
   flex: 1;
-  overflow: hidden;
+  overflow: auto;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   padding: 6px 16px;
 }
 
 #goal-svg {
   display: block;
+  flex-shrink: 0;
 }
 
 .goal-panel-title {

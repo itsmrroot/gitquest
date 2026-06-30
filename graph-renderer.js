@@ -167,8 +167,8 @@ class GraphRenderer {
       if (isHead) {
         const ring = document.createElementNS(ns, 'circle');
         ring.setAttribute('cx', p.x); ring.setAttribute('cy', p.y);
-        ring.setAttribute('r', '17'); ring.setAttribute('fill', 'none');
-        ring.setAttribute('stroke', color); ring.setAttribute('stroke-width', '2');
+        ring.setAttribute('r', '23'); ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', color); ring.setAttribute('stroke-width', '2.5');
         ring.classList.add('head-ring');
         root.appendChild(ring);
       }
@@ -177,16 +177,16 @@ class GraphRenderer {
       let nodeEl;
       if (isMerge) {
         nodeEl = document.createElementNS(ns, 'polygon');
-        const r = 15;
+        const r = 20;
         nodeEl.setAttribute('points', `${p.x},${p.y - r} ${p.x + r},${p.y} ${p.x},${p.y + r} ${p.x - r},${p.y}`);
       } else {
         nodeEl = document.createElementNS(ns, 'circle');
         nodeEl.setAttribute('cx', p.x); nodeEl.setAttribute('cy', p.y);
-        nodeEl.setAttribute('r', '13');
+        nodeEl.setAttribute('r', '18');
       }
       nodeEl.setAttribute('fill', color);
       nodeEl.setAttribute('stroke', isHead ? '#ffffff' : '#0d1117');
-      nodeEl.setAttribute('stroke-width', isHead ? '3' : '2');
+      nodeEl.setAttribute('stroke-width', isHead ? '4' : '2.5');
       nodeEl.classList.add('commit-node');
       if (!isFirstRender && !prevIds.has(cid)) nodeEl.classList.add('node-new');
 
@@ -213,9 +213,9 @@ class GraphRenderer {
 
       // Commit ID text
       const txt = document.createElementNS(ns, 'text');
-      txt.setAttribute('x', p.x); txt.setAttribute('y', p.y + 34);
+      txt.setAttribute('x', p.x); txt.setAttribute('y', p.y + 38);
       txt.setAttribute('text-anchor', 'middle');
-      txt.setAttribute('fill', '#8b949e'); txt.setAttribute('font-size', '14');
+      txt.setAttribute('fill', '#8b949e'); txt.setAttribute('font-size', '15');
       txt.setAttribute('font-weight', '700');
       txt.setAttribute('font-family', 'JetBrains Mono, monospace');
       txt.textContent = cid.slice(0, 7);
@@ -231,10 +231,10 @@ class GraphRenderer {
       else branchesByCommit[bid].push(bname);
     }
 
-    const NODE_R  = 13;  // circle radius
-    const LABEL_H = 22;  // pill height
-    const LABEL_GAP = 4; // gap between stacked pills
-    const STEM_GAP = 7;  // gap between node top and first label bottom
+    const NODE_R  = 18;  // circle radius
+    const LABEL_H = 26;  // pill height
+    const LABEL_GAP = 5; // gap between stacked pills
+    const STEM_GAP = 8;  // gap between node top and first label bottom
 
     // Read panel background from CSS so inactive pills can mask edge lines
     const panelBg = getComputedStyle(document.documentElement)
@@ -260,7 +260,7 @@ class GraphRenderer {
         const isActive = bname === headBranch;
         const color = this._branchColor(bname);
         const labelText = isActive ? `● ${bname}` : bname;
-        const w = Math.max(labelText.length * 9 + 18, 44);
+        const w = Math.max(labelText.length * 10 + 20, 50);
 
         // labelBottom = top-of-node minus stem gap minus stacking offset
         const labelBottom = p.y - NODE_R - STEM_GAP - i * (LABEL_H + LABEL_GAP);
@@ -284,7 +284,7 @@ class GraphRenderer {
         lbl.setAttribute('y', textY);
         lbl.setAttribute('text-anchor', 'middle');
         lbl.setAttribute('fill', isActive ? '#0d1117' : color);
-        lbl.setAttribute('font-size', '13');
+        lbl.setAttribute('font-size', '14');
         lbl.setAttribute('font-weight', '700');
         lbl.setAttribute('font-family', 'JetBrains Mono, monospace');
         lbl.textContent = labelText;
@@ -297,9 +297,9 @@ class GraphRenderer {
       const p = pos[tid];
       if (!p) continue;
       const tl = document.createElementNS(ns, 'text');
-      tl.setAttribute('x', p.x); tl.setAttribute('y', p.y + 56);
+      tl.setAttribute('x', p.x); tl.setAttribute('y', p.y + 60);
       tl.setAttribute('text-anchor', 'middle');
-      tl.setAttribute('fill', '#e3b341'); tl.setAttribute('font-size', '13');
+      tl.setAttribute('fill', '#e3b341'); tl.setAttribute('font-size', '14');
       tl.setAttribute('font-family', 'JetBrains Mono, monospace');
       tl.textContent = `🏷 ${tname}`;
       root.appendChild(tl);
@@ -309,9 +309,9 @@ class GraphRenderer {
     if (!headBranch && HEAD && pos[HEAD]) {
       const p = pos[HEAD];
       const hl = document.createElementNS(ns, 'text');
-      hl.setAttribute('x', p.x); hl.setAttribute('y', p.y - 20);
+      hl.setAttribute('x', p.x); hl.setAttribute('y', p.y - 28);
       hl.setAttribute('text-anchor', 'middle');
-      hl.setAttribute('fill', '#f0883e'); hl.setAttribute('font-size', '14');
+      hl.setAttribute('fill', '#f0883e'); hl.setAttribute('font-size', '15');
       hl.setAttribute('font-weight', '700');
       hl.setAttribute('font-family', 'JetBrains Mono, monospace');
       hl.textContent = 'HEAD (detached)';

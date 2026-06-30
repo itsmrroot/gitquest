@@ -849,17 +849,16 @@ class GitQuestApp {
     document.getElementById('goal-reopen')?.style.setProperty('display', 'none');
     if (notEl) notEl.textContent = goal.note || '';
 
-    // Size the SVG to fit the goal graph — panel is now inline horizontal bar
+    // Size the SVG to the goal graph at full (1:1) scale so commit nodes never
+    // shrink below their normal size — the panel scrolls/pans for larger graphs
+    // instead of squeezing everything to fit.
     const commitCount = Object.keys(goal.commits).length;
     const branchCount = Object.keys(goal.branches).length;
-    // Match renderer constants (OFFSET_X=50, NODE_DX=130, OFFSET_Y=60, NODE_DY=95)
+    // Match renderer constants (OFFSET_X=55, NODE_DX=130, OFFSET_Y=70, NODE_DY=95)
     const vbW = Math.max(180, commitCount * 130 + 60);
     const vbH = Math.max(140, (branchCount - 1) * 95 + 140);
-    // Scale to fill available height (panel ~200px, header ~38px, body padding ~12px)
-    const BODY_H = 150;
-    const scale = Math.max(0.3, Math.min(1.8, BODY_H / vbH));
-    goalSvg.style.height = Math.round(vbH * scale) + 'px';
-    goalSvg.style.width  = Math.round(vbW * scale) + 'px';
+    goalSvg.style.width  = vbW + 'px';
+    goalSvg.style.height = vbH + 'px';
     goalSvg.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`);
 
     // Reset pan so goal graph is always fully visible
