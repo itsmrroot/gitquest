@@ -147,7 +147,7 @@ class GitQuestApp {
 
       const header = document.createElement('div');
       header.className = 'tier-header';
-      header.innerHTML = `<span>${tier.name}</span><span style="margin-left:auto;font-size:11px;opacity:0.6">${done}/${tier.challenges.length}</span>`;
+      header.innerHTML = `<span>${t('tier_' + tier.id)}</span><span style="margin-left:auto;font-size:11px;opacity:0.6">${done}/${tier.challenges.length}</span>`;
       el.appendChild(header);
 
       const bar = document.createElement('div');
@@ -172,7 +172,7 @@ class GitQuestApp {
         item.innerHTML = `
           <div class="challenge-dot ${dotClass}"></div>
           <div class="challenge-info">
-            <div class="challenge-name">${ch.name}</div>
+            <div class="challenge-name">${t('ch_' + ch.id + '_name')}</div>
             <div class="challenge-meta">${t('diff_' + ch.difficulty) || ch.difficulty}${isLocked ? ' 🔒' : ''}</div>
           </div>
           <div class="challenge-xp">+${ch.xp}XP</div>`;
@@ -217,7 +217,7 @@ class GitQuestApp {
 
     const out = document.getElementById('terminal-output');
     if (out) out.innerHTML = '';
-    this._log('info', `▶ ${challenge.name}`);
+    this._log('info', `▶ ${t('ch_' + challenge.id + '_name')}`);
     this._focusInput();
 
     // Close any open modals
@@ -244,8 +244,8 @@ class GitQuestApp {
     // Header
     const tierEl = document.getElementById('intro-tier');
     const titleEl = document.getElementById('intro-title');
-    if (tierEl) tierEl.textContent = tier.name;
-    if (titleEl) titleEl.textContent = challenge.name;
+    if (tierEl) tierEl.textContent = t('tier_' + tier.id);
+    if (titleEl) titleEl.textContent = t('ch_' + challenge.id + '_name');
 
     // Difficulty badge
     const diffEl = document.getElementById('intro-diff');
@@ -270,7 +270,7 @@ class GitQuestApp {
       if (intro?.description) {
         html += `<div class="intro-description">${intro.description}</div>`;
       } else {
-        html += `<div class="intro-description">${challenge.description}</div>`;
+        html += `<div class="intro-description">${t('ch_' + challenge.id + '_desc')}</div>`;
       }
 
       if (intro?.prereqs) {
@@ -299,7 +299,7 @@ class GitQuestApp {
         ${challenge.goals.map((g, i) => `
           <div class="intro-goal-row">
             <div class="intro-goal-num">${i+1}</div>
-            <span>${g.text}</span>
+            <span>${t('ch_' + challenge.id + '_' + g.id)}</span>
           </div>`).join('')}
       </div>`;
 
@@ -366,18 +366,18 @@ class GitQuestApp {
     }[ch.difficulty] || 'diff-beginner';
 
     panel.innerHTML = `
-      <div class="mission-title">${ch.name}</div>
+      <div class="mission-title">${t('ch_' + ch.id + '_name')}</div>
       <div class="mission-difficulty ${diffClass}">● ${t('diff_' + ch.difficulty) || ch.difficulty} · ${ch.xp} XP</div>
-      <p class="mission-desc">${ch.description}</p>
+      <p class="mission-desc">${t('ch_' + ch.id + '_desc')}</p>
       <div class="mission-goal">
         <div class="mission-goal-title">${t('objectives') || '🎯 Objectives'}</div>
         ${ch.goals.map(g => `
           <div class="goal-item" id="goal-${g.id}">
             <div class="goal-check" id="check-${g.id}"></div>
-            <span>${g.text}</span>
+            <span>${t('ch_' + ch.id + '_' + g.id)}</span>
           </div>`).join('')}
       </div>
-      ${ch.concept ? `<div class="concept-box">💡 <strong>${t('concept')}:</strong> ${ch.concept}</div>` : ''}
+      ${ch.concept ? `<div class="concept-box">💡 <strong>${t('concept')}:</strong> ${t('ch_' + ch.id + '_concept')}</div>` : ''}
       <button class="hint-btn" id="hint-btn-main">${t('showHint') || '💡 Show Hint'} (${ch.hints?.length || 0})</button>
       <div class="hint-box" id="hint-box"></div>
     `;
@@ -484,7 +484,7 @@ class GitQuestApp {
       content.innerHTML = `<div style="color:var(--text-muted);text-align:center;padding:20px">${t('selectFirst')}</div>`;
     } else {
       content.innerHTML = `
-        <div class="objective-desc">${ch.description}</div>
+        <div class="objective-desc">${t('ch_' + ch.id + '_desc')}</div>
         <div class="objective-goals">
           ${ch.goals.map((g, i) => {
             const state = this.engine.getState();
@@ -493,11 +493,11 @@ class GitQuestApp {
             return `
               <div class="objective-goal-item">
                 <div class="obj-num" style="${passed ? 'background:var(--accent);color:#000;border-color:var(--accent)' : ''}">${passed ? '✓' : i+1}</div>
-                <span style="${passed ? 'color:var(--accent)' : ''}">${g.text}</span>
+                <span style="${passed ? 'color:var(--accent)' : ''}">${t('ch_' + ch.id + '_' + g.id)}</span>
               </div>`;
           }).join('')}
         </div>
-        ${ch.concept ? `<div class="concept-callout">💡 <strong>${t('keyConcept')}:</strong> ${ch.concept}</div>` : ''}
+        ${ch.concept ? `<div class="concept-callout">💡 <strong>${t('keyConcept')}:</strong> ${t('ch_' + ch.id + '_concept')}</div>` : ''}
       `;
     }
     modal.classList.add('show');
@@ -755,7 +755,7 @@ class GitQuestApp {
     const overlay = document.getElementById('success-overlay');
     if (!overlay) return;
     overlay.querySelector('.success-title').textContent = t('challengeComplete');
-    overlay.querySelector('.success-sub').textContent = ch.name;
+    overlay.querySelector('.success-sub').textContent = t('ch_' + ch.id + '_name');
     overlay.querySelector('.xp-earned').textContent = `+${ch.xp} ${t('xpEarned') || 'XP'}`;
     overlay.querySelector('.next-btn').textContent = t('nextChallenge');
     overlay.querySelector('.retry-btn').textContent = t('keepExploring');
