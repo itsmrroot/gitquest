@@ -215,7 +215,8 @@ class GraphRenderer {
       const txt = document.createElementNS(ns, 'text');
       txt.setAttribute('x', p.x); txt.setAttribute('y', p.y + 34);
       txt.setAttribute('text-anchor', 'middle');
-      txt.setAttribute('fill', '#8b949e'); txt.setAttribute('font-size', '13');
+      txt.setAttribute('fill', '#8b949e'); txt.setAttribute('font-size', '14');
+      txt.setAttribute('font-weight', '700');
       txt.setAttribute('font-family', 'JetBrains Mono, monospace');
       txt.textContent = cid.slice(0, 7);
       root.appendChild(txt);
