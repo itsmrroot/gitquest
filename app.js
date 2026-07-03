@@ -566,8 +566,8 @@ class GitQuestApp {
     if (this.mode === 'learn' && this.currentChallenge) this._checkGoals();
   }
 
-  _saveSnapshot() {
-    this.undoStack.push({
+  _captureSnapshot() {
+    return {
       commits: JSON.parse(JSON.stringify(this.engine.commits)),
       branches: { ...this.engine.branches },
       HEAD: this.engine.HEAD,
@@ -576,7 +576,11 @@ class GitQuestApp {
       staging: [...this.engine.staging],
       stash: JSON.parse(JSON.stringify(this.engine.stash || [])),
       remotes: JSON.parse(JSON.stringify(this.engine.remotes || {}))
-    });
+    };
+  }
+
+  _pushSnapshot(snapshot) {
+    this.undoStack.push(snapshot);
     if (this.undoStack.length > 20) this.undoStack.shift();
   }
 
@@ -716,9 +720,11 @@ class GitQuestApp {
     const branch = this.engine.headBranch || '(detached)';
     this._logRaw(`<span class="term-prompt">${this._esc(branch)} $</span> <span class="term-cmd">${this._esc(input)}</span>`);
 
+    // Capture state *before* running the command, so undo can restore it
+    const preSnapshot = this._captureSnapshot();
     const result = this.engine.execute(input);
     // Only save undo snapshot when the command actually changed state
-    if (!readOnly.has(sub) && result.ok) this._saveSnapshot();
+    if (!readOnly.has(sub) && result.ok) this._pushSnapshot(preSnapshot);
     if (result.msg) this._log(result.ok ? 'out' : 'err', result.msg);
 
     const out = document.getElementById('terminal-output');
