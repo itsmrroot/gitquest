@@ -109,23 +109,24 @@
       <div class="canvas-hint" data-i18n="draghint">Drag to pan · Hover commits for details</div>
       <div class="node-tooltip" id="node-tooltip"></div>
       <div id="autocomplete"></div>
-      <!-- Re-open badge floats at bottom of graph when goal panel is closed -->
-      <button id="goal-reopen" style="display:none" title="Show goal graph" data-i18n="goalBtnLabel">🎯 Goal</button>
-    </div>
 
-    <!-- ── GOAL TO REACH PANEL (inline between graph and terminal) ── -->
-    <div id="goal-panel" style="display:none">
-      <div class="goal-panel-header" id="goal-drag-handle">
-        <span class="goal-panel-title" data-i18n="goalToReach">🎯 Goal To Reach</span>
-        <div id="goal-note" class="goal-note"></div>
-        <div class="goal-panel-btns">
-          <button class="goal-panel-btn" id="goal-toggle" title="Minimise">−</button>
-          <button class="goal-panel-btn goal-close-btn" id="goal-close" title="Close">×</button>
+      <!-- ── GOAL TO REACH PANEL (floating overlay inside the graph area, shares its space) ── -->
+      <div id="goal-panel" style="display:none">
+        <div class="goal-panel-header" id="goal-drag-handle">
+          <span class="goal-panel-title" data-i18n="goalToReach">🎯 Goal To Reach</span>
+          <div id="goal-note" class="goal-note"></div>
+          <div class="goal-panel-btns">
+            <button class="goal-panel-btn" id="goal-toggle" title="Minimise">−</button>
+            <button class="goal-panel-btn goal-close-btn" id="goal-close" title="Close">×</button>
+          </div>
+        </div>
+        <div id="goal-panel-body">
+          <svg id="goal-svg" xmlns="http://www.w3.org/2000/svg"></svg>
         </div>
       </div>
-      <div id="goal-panel-body">
-        <svg id="goal-svg" xmlns="http://www.w3.org/2000/svg"></svg>
-      </div>
+
+      <!-- Re-open badge floats at bottom of graph when goal panel is closed -->
+      <button id="goal-reopen" style="display:none" title="Show goal graph" data-i18n="goalBtnLabel">🎯 Goal</button>
     </div>
 
     <div id="terminal-area">
@@ -209,6 +210,11 @@
     </div>
 
   </aside>
+
+  <!-- Re-open badge floats at the right screen edge when the mission panel is collapsed (desktop only) -->
+  <button id="mission-reopen" style="display:none" title="Show mission panel">
+    <span>🎯</span> <span data-i18n="mission">Mission</span>
+  </button>
 
   <nav id="mobile-nav">
     <button class="mobile-nav-btn active" data-panel="graph">

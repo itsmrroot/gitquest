@@ -638,12 +638,22 @@ class GitQuestApp {
 
     document.querySelectorAll('.panel-tab').forEach(tab => {
       tab.addEventListener('click', () => {
+        // Clicking the already-active tab collapses the whole mission panel,
+        // the same way the Levels button collapses the Challenges sidebar.
+        if (tab.classList.contains('active') && window.innerWidth > 1024) {
+          this._toggleRightPanel();
+          return;
+        }
         const target = tab.dataset.tab;
         document.querySelectorAll('.panel-tab').forEach(x => x.classList.remove('active'));
         document.querySelectorAll('.panel-content').forEach(x => x.classList.remove('active'));
         tab.classList.add('active');
         document.getElementById(`${target}-content`)?.classList.add('active');
       });
+    });
+
+    document.getElementById('mission-reopen')?.addEventListener('click', () => {
+      this._toggleRightPanel();
     });
 
     document.getElementById('btn-clear')?.addEventListener('click', () => {
@@ -856,7 +866,7 @@ class GitQuestApp {
     // Match renderer constants (OFFSET_X=55, NODE_DX=130, OFFSET_Y=70, NODE_DY=95)
     const vbW = Math.max(180, commitCount * 130 + 60);
     const vbH = Math.max(140, (branchCount - 1) * 95 + 140);
-    const BODY_H = 150;
+    const BODY_H = 160;
     const scale = Math.max(0.55, Math.min(1.0, BODY_H / vbH));
     goalSvg.style.width  = Math.round(vbW * scale) + 'px';
     goalSvg.style.height = Math.round(vbH * scale) + 'px';
@@ -1054,6 +1064,13 @@ class GitQuestApp {
     }
     document.getElementById('sidebar')?.classList.remove('open');
     document.getElementById('sidebar-overlay')?.classList.remove('show');
+  }
+
+  _toggleRightPanel() {
+    const app = document.getElementById('app');
+    const reopen = document.getElementById('mission-reopen');
+    const collapsed = app?.classList.toggle('right-panel-collapsed');
+    if (reopen) reopen.style.display = collapsed ? 'flex' : 'none';
   }
 
   _showMobilePanel(panel) {

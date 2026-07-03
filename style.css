@@ -2554,13 +2554,22 @@ kbd {
 
 /* ══════════════════════════════════════
    GOAL TO REACH PANEL
+   Floats inside the graph area instead of taking a
+   dedicated row, so the tree keeps its full height.
 ══════════════════════════════════════ */
 #goal-panel {
-  flex-shrink: 0;
-  width: 100%;
-  height: 200px;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 40;
+  width: 300px;
+  max-width: calc(100% - 24px);
+  height: 210px;
+  max-height: calc(100% - 24px);
   background: var(--bg-secondary);
-  border-top: 2px solid rgba(57, 211, 83, 0.3);
+  border: 1px solid rgba(57, 211, 83, 0.3);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -2898,9 +2907,12 @@ kbd {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  /* Goal panel on mobile: compact height */
+  /* Goal panel on mobile: compact, narrower floating card */
   #goal-panel {
+    width: 240px;
     height: 160px;
+    top: 8px;
+    right: 8px;
   }
 
   /* Autocomplete above bottom nav */
@@ -2934,6 +2946,61 @@ kbd {
 
   [dir="rtl"] #app.sidebar-collapsed {
     grid-template-columns: 320px 1fr 0;
+  }
+
+  /* Mission panel collapses the same way — click its active tab, like Levels does for Challenges */
+  #app.right-panel-collapsed {
+    grid-template-columns: 280px 1fr 0;
+  }
+
+  #app.right-panel-collapsed #right-panel {
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  [dir="rtl"] #app.right-panel-collapsed {
+    grid-template-columns: 0 1fr 280px;
+  }
+
+  #app.sidebar-collapsed.right-panel-collapsed,
+  [dir="rtl"] #app.sidebar-collapsed.right-panel-collapsed {
+    grid-template-columns: 0 1fr 0;
+  }
+}
+
+/* Floating re-open tab for the collapsed mission panel (desktop only) */
+#mission-reopen {
+  display: none;
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent);
+  border-right: none;
+  border-radius: 20px 0 0 20px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  z-index: 120;
+  box-shadow: -2px 2px 16px rgba(0, 0, 0, 0.3);
+  transition: var(--transition);
+}
+
+#mission-reopen:hover {
+  padding-right: 16px;
+  background: rgba(57, 211, 83, 0.1);
+}
+
+@media (max-width: 1024px) {
+  #mission-reopen {
+    display: none !important;
   }
 }
 
