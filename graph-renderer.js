@@ -11,6 +11,9 @@ class GraphRenderer {
     this.panY = 0;
     // Auto-center the graph in the viewport until the user manually pans it.
     this._autoCenter = true;
+    // Shrink the main canvas graph a bit so it doesn't feel oversized; the
+    // goal mini-map already fits itself via its own viewBox scaling.
+    this._contentScale = engine ? 0.82 : 1;
     this.tooltip = document.getElementById('node-tooltip');
     this._prevCommits = null;
     this._setupPan();
@@ -28,7 +31,7 @@ class GraphRenderer {
       this.panX = spx + (e.clientX - sx);
       this.panY = spy + (e.clientY - sy);
       const g = this.svg.querySelector('g.root');
-      if (g) g.setAttribute('transform', `translate(${this.panX},${this.panY})`);
+      if (g) g.setAttribute('transform', `translate(${this.panX},${this.panY}) scale(${this._contentScale})`);
     });
     window.addEventListener('mouseup', () => { drag = false; });
 
@@ -46,7 +49,7 @@ class GraphRenderer {
       this.panX = spx + (e.touches[0].clientX - sx);
       this.panY = spy + (e.touches[0].clientY - sy);
       const g = this.svg.querySelector('g.root');
-      if (g) g.setAttribute('transform', `translate(${this.panX},${this.panY})`);
+      if (g) g.setAttribute('transform', `translate(${this.panX},${this.panY}) scale(${this._contentScale})`);
     }, { passive: false });
   }
 
@@ -145,8 +148,9 @@ class GraphRenderer {
         const containerW = this.svg.clientWidth || 0;
         const containerH = this.svg.clientHeight || 0;
         if (containerW && containerH) {
-          this.panX = containerW / 2 - (minX + maxX) / 2;
-          this.panY = containerH / 2 - (minY + maxY) / 2;
+          const s = this._contentScale;
+          this.panX = containerW / 2 - s * (minX + maxX) / 2;
+          this.panY = containerH / 2 - s * (minY + maxY) / 2;
         }
       }
     }
@@ -157,7 +161,7 @@ class GraphRenderer {
     const ns = 'http://www.w3.org/2000/svg';
     const root = document.createElementNS(ns, 'g');
     root.classList.add('root');
-    root.setAttribute('transform', `translate(${this.panX},${this.panY})`);
+    root.setAttribute('transform', `translate(${this.panX},${this.panY}) scale(${this._contentScale})`);
     this.svg.appendChild(root);
 
     // Draw edges
