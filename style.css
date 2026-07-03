@@ -2566,7 +2566,7 @@ kbd {
   max-width: calc(100% - 24px);
   height: 210px;
   max-height: calc(100% - 24px);
-  background: var(--bg-secondary);
+  background: var(--bg-primary);
   border: 1px solid rgba(57, 211, 83, 0.3);
   border-radius: var(--radius-md);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
@@ -2581,7 +2581,7 @@ kbd {
   gap: 12px;
   padding: 6px 14px;
   color: var(--text-primary);
-  background: var(--bg-panel);
+  background: var(--bg-primary);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   user-select: none;
