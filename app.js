@@ -210,6 +210,7 @@ class GitQuestApp {
       this.engine.execute(cmd);
       if (/^git\s+commit\b/.test(cmd)) this.setupCommitCount++;
     }
+    this.renderer?.recenter();
     this.renderer?.render();
     this._buildSidebar();
     this._renderMission(challenge);
@@ -421,7 +422,7 @@ class GitQuestApp {
     document.getElementById('tool-reset')?.addEventListener('click', () => {
       if (this.currentChallenge) this._loadChallenge(this.currentTier, this.currentChallenge);
       else {
-        this.engine.reset(); this.renderer?.render();
+        this.engine.reset(); this.renderer?.recenter(); this.renderer?.render();
         const out = document.getElementById('terminal-output');
         if (out) out.innerHTML = '';
         this._log('info', t('repoReset'));
@@ -452,6 +453,7 @@ class GitQuestApp {
       this.currentChallenge = null;
       this.currentTier = null;
       this.engine.reset();
+      this.renderer?.recenter();
       this.renderer?.render();
       // Rebuild sidebar
       this._buildSidebar();
@@ -668,7 +670,7 @@ class GitQuestApp {
     document.getElementById('btn-reset')?.addEventListener('click', () => {
       if (this.currentChallenge) this._loadChallenge(this.currentTier, this.currentChallenge);
       else {
-        this.engine.reset(); this.renderer?.render();
+        this.engine.reset(); this.renderer?.recenter(); this.renderer?.render();
         const out = document.getElementById('terminal-output');
         if (out) out.innerHTML = '';
         this._log('info', t('repoReset'));
@@ -692,7 +694,7 @@ class GitQuestApp {
       this._logRaw(`<span class="term-prompt">${this._esc(branch)} $</span> <span class="term-cmd">${this._esc(input)}</span>`);
       if (this.currentChallenge) this._loadChallenge(this.currentTier, this.currentChallenge);
       else {
-        this.engine.reset(); this.renderer?.render();
+        this.engine.reset(); this.renderer?.recenter(); this.renderer?.render();
         const out = document.getElementById('terminal-output');
         if (out) out.innerHTML = '';
         this._log('info', t('repoReset'));
@@ -815,6 +817,7 @@ class GitQuestApp {
     this.mode = 'sandbox';
     this.currentChallenge = null;
     this.engine.reset();
+    this.renderer?.recenter();
     this.renderer?.render();
     const out = document.getElementById('terminal-output');
     if (out) out.innerHTML = '';

@@ -9,6 +9,8 @@ class GraphRenderer {
     this.engine = engine;
     this.panX = 0;
     this.panY = 0;
+    // Auto-center the graph in the viewport until the user manually pans it.
+    this._autoCenter = true;
     this.tooltip = document.getElementById('node-tooltip');
     this._prevCommits = null;
     this._setupPan();
@@ -22,6 +24,7 @@ class GraphRenderer {
     });
     window.addEventListener('mousemove', e => {
       if (!drag) return;
+      this._autoCenter = false;
       this.panX = spx + (e.clientX - sx);
       this.panY = spy + (e.clientY - sy);
       const g = this.svg.querySelector('g.root');
@@ -39,11 +42,17 @@ class GraphRenderer {
     this.svg.addEventListener('touchmove', e => {
       if (e.touches.length !== 1) return;
       e.preventDefault();
+      this._autoCenter = false;
       this.panX = spx + (e.touches[0].clientX - sx);
       this.panY = spy + (e.touches[0].clientY - sy);
       const g = this.svg.querySelector('g.root');
       if (g) g.setAttribute('transform', `translate(${this.panX},${this.panY})`);
     }, { passive: false });
+  }
+
+  /** Re-enable auto-centering, e.g. when a fresh challenge/reset loads a new graph. */
+  recenter() {
+    this._autoCenter = true;
   }
 
   _branchColor(name) {
@@ -117,6 +126,29 @@ class GraphRenderer {
         x: OFFSET_X + (xPos[id] || 0) * NODE_DX,
         y: OFFSET_Y + (lane[id] || 0) * NODE_DY
       };
+    }
+
+    // ── AUTO-CENTER ──
+    // Keep the graph centered in the visible canvas until the user drags it
+    // themselves (see _setupPan), instead of always sitting pinned top-left.
+    if (this._autoCenter) {
+      const xs = Object.values(pos).map(p => p.x);
+      const ys = Object.values(pos).map(p => p.y);
+      if (xs.length) {
+        const PAD_X = 70;    // node radius + label pill half-width
+        const PAD_TOP = 95;  // room for stacked branch labels above a node
+        const PAD_BOTTOM = 50; // room for the commit hash text below a node
+        const minX = Math.min(...xs) - PAD_X;
+        const maxX = Math.max(...xs) + PAD_X;
+        const minY = Math.min(...ys) - PAD_TOP;
+        const maxY = Math.max(...ys) + PAD_BOTTOM;
+        const containerW = this.svg.clientWidth || 0;
+        const containerH = this.svg.clientHeight || 0;
+        if (containerW && containerH) {
+          this.panX = containerW / 2 - (minX + maxX) / 2;
+          this.panY = containerH / 2 - (minY + maxY) / 2;
+        }
+      }
     }
 
     // ── SVG BUILD ──
