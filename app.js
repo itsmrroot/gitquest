@@ -1008,7 +1008,26 @@ class GitQuestApp {
       ['undo', 'Undo last command'],
     ];
 
-    const matches = CMDS.filter(([cmd]) => cmd.startsWith(val) && cmd.trim() !== val.trim());
+    let matches = CMDS.filter(([cmd]) => cmd.startsWith(val) && cmd.trim() !== val.trim());
+
+    // Live ref completion: if the word currently being typed is the start of
+    // a branch/tag name that already exists in this repo, offer it directly
+    // (e.g. "git checkout hotf" -> "git checkout hotfix/bug"), regardless of
+    // which subcommand it follows.
+    const lastSpaceIdx = val.lastIndexOf(' ');
+    const partial = val.slice(lastSpaceIdx + 1);
+    if (partial && !partial.startsWith('-')) {
+      const prefix = val.slice(0, lastSpaceIdx + 1);
+      const refNames = [
+        ...Object.keys(this.engine.branches).map(name => [name, 'Existing branch']),
+        ...Object.keys(this.engine.tags).map(name => [name, 'Existing tag']),
+      ];
+      const refMatches = refNames
+        .filter(([name]) => name.startsWith(partial) && name !== partial)
+        .map(([name, desc]) => [prefix + name, desc]);
+      matches = [...refMatches, ...matches];
+    }
+
     if (!matches.length) { this._hideAC(); return; }
 
     ac.innerHTML = matches.slice(0, 7).map(([cmd, desc]) =>

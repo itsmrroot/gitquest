@@ -3,6 +3,25 @@
 // Full curriculum from Beginner to Expert
 // =============================================
 
+// True once `branchName`'s tip commit is an ancestor of (or equal to)
+// `ontoBranch`'s tip — i.e. the branch has actually been merged in,
+// regardless of which exact `git merge` command text was typed.
+function isMerged(state, branchName, ontoBranch) {
+  const from = state.branches[branchName];
+  let cur = state.branches[ontoBranch];
+  if (!from || !cur) return false;
+  const visited = new Set();
+  const stack = [cur];
+  while (stack.length) {
+    const id = stack.pop();
+    if (!id || visited.has(id)) continue;
+    if (id === from) return true;
+    visited.add(id);
+    (state.commits[id]?.parents || []).forEach(p => stack.push(p));
+  }
+  return false;
+}
+
 const TIERS = [
   {
     id: 'rookie',
@@ -327,7 +346,16 @@ const TIERS = [
         goals: [
           { id: 'g1', text: 'Create hotfix branch from main', check: (s) => Object.keys(s.branches).some(b => b.startsWith('hotfix')) },
           { id: 'g2', text: 'Commit the fix', check: (s, h) => h.filter(c => c.startsWith('git commit')).length >= 1 },
-          { id: 'g3', text: 'Merge hotfix into main', check: (s, h) => h.some(cmd => cmd.includes('merge') && cmd.includes('hotfix')) }
+          { id: 'g3', text: 'Merge hotfix into main', check: (s) => {
+              const hotfixBranch = Object.keys(s.branches).find(b => b.startsWith('hotfix'));
+              return !!hotfixBranch && isMerged(s, hotfixBranch, 'main');
+            }
+          },
+          { id: 'g4', text: 'Merge hotfix into develop too', check: (s) => {
+              const hotfixBranch = Object.keys(s.branches).find(b => b.startsWith('hotfix'));
+              return !!hotfixBranch && isMerged(s, hotfixBranch, 'develop');
+            }
+          }
         ],
         hints: [
           'git checkout -b hotfix/critical-bug main',
