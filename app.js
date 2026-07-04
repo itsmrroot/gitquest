@@ -717,7 +717,6 @@ class GitQuestApp {
 
     this.cmdHistory.push(input);
     this.histIdx = -1;
-    this.cmdsThisChallenge.push(input);
 
     const branch = this.engine.headBranch || '(detached)';
     this._logRaw(`<span class="term-prompt">${this._esc(branch)} $</span> <span class="term-cmd">${this._esc(input)}</span>`);
@@ -725,7 +724,10 @@ class GitQuestApp {
     // Capture state *before* running the command, so undo can restore it
     const preSnapshot = this._captureSnapshot();
     const result = this.engine.execute(input);
-    // Only save undo snapshot when the command actually changed state
+    // Only count it toward goal-checking / undo if it actually succeeded —
+    // a failed command (e.g. a typo'd branch name) must not let a goal's
+    // check(history) see command text it never actually accomplished.
+    if (result.ok) this.cmdsThisChallenge.push(input);
     if (!readOnly.has(sub) && result.ok) this._pushSnapshot(preSnapshot);
     if (result.msg) this._log(result.ok ? 'out' : 'err', result.msg);
 
