@@ -145,8 +145,15 @@ class GraphRenderer {
         const maxX = Math.max(...xs) + PAD_X;
         const minY = Math.min(...ys) - PAD_TOP;
         const maxY = Math.max(...ys) + PAD_BOTTOM;
-        const containerW = this.svg.clientWidth || 0;
-        const containerH = this.svg.clientHeight || 0;
+        // Center against the SVG's own coordinate space. The main canvas has
+        // no viewBox, so that space equals its CSS pixel size (clientWidth/
+        // Height) 1:1. The goal mini-map DOES set a viewBox to fit-scale its
+        // content, so its coordinate space is the viewBox size instead —
+        // using clientWidth/Height there would mix CSS pixels with viewBox
+        // units and produce a bogus offset (content pinned oddly off-center).
+        const vb = this.svg.viewBox && this.svg.viewBox.baseVal;
+        const containerW = (vb && vb.width) || this.svg.clientWidth || 0;
+        const containerH = (vb && vb.height) || this.svg.clientHeight || 0;
         if (containerW && containerH) {
           const s = this._contentScale;
           this.panX = containerW / 2 - s * (minX + maxX) / 2;
