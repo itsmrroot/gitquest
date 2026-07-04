@@ -2905,6 +2905,10 @@ kbd {
     background: var(--bg-secondary);
     border-top: 1px solid var(--border);
     padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* Stay above #sidebar-overlay (z-index 199) so it's still tappable
+       while the Challenges/Mission drawer backdrop is showing. */
+    position: relative;
+    z-index: 210;
   }
 
   /* Goal panel on mobile: compact, narrower floating card */

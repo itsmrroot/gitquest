@@ -1083,11 +1083,14 @@ class GitQuestApp {
   }
 
   _showMobilePanel(panel) {
+    // The three mobile panels are mutually exclusive — always start from
+    // "everything closed" so switching straight from Mission to Challenges
+    // (or vice versa) can't leave two drawers open at once.
     const rightPanel = document.getElementById('right-panel');
     this._closeSidebar();
+    rightPanel?.classList.remove('open');
     switch (panel) {
       case 'graph':
-        rightPanel?.classList.remove('open');
         break;
       case 'challenges':
         this._toggleSidebar();

@@ -82,6 +82,7 @@ class GitEngine {
       else if (t === '-c') { flags.c = true; }
       else if (t === '-d') { flags.d = true; }
       else if (t === '-D') { flags.D = true; }
+      else if (t === '-f') { flags.f = true; }
       else if (t === '-v') { flags.v = true; }
       else if (t === '-m') { flags.m = tokens[++i] || ''; }
       else if (t.startsWith('--message=')) { flags.m = t.slice(10); }
@@ -213,10 +214,21 @@ class GitEngine {
       const name = positional[0];
       if (!name) return { ok: false, msg: 'Branch name required.' };
       if (name === this.headBranch) return { ok: false, msg: `Cannot delete checked-out branch '${name}'.` };
-      if (!this.branches[name] && !flags.D) return { ok: false, msg: `Branch '${name}' not found.` };
+      if (!this.branches[name]) return { ok: false, msg: `error: branch '${name}' not found.` };
       delete this.branches[name];
       this._emit('graph-update');
       return { ok: true, msg: `Deleted branch ${name}.` };
+    }
+    // Force-move: git branch -f <name> <ref>
+    if (flags.f) {
+      const name = positional[0];
+      const ref = positional[1];
+      if (!name || !ref) return { ok: false, msg: 'Usage: git branch -f <name> <ref>' };
+      const target = this._resolveRef(ref);
+      if (!target) return { ok: false, msg: `Invalid ref: '${ref}'` };
+      this.branches[name] = target;
+      this._emit('graph-update');
+      return { ok: true, msg: `Branch '${name}' force-moved to ${target.slice(0, 7)}.` };
     }
     // Rename: git branch -m [<old>] <new>
     // Tokenizer consumes the token after -m as flags.m, so:
@@ -261,6 +273,9 @@ class GitEngine {
     if (flags.b || flags.B) {
       const name = positional[0];
       if (!name) return { ok: false, msg: 'Branch name required.' };
+      if (flags.b && this.branches[name]) {
+        return { ok: false, msg: `fatal: A branch named '${name}' already exists.` };
+      }
       const start = positional[1] ? this._resolveRef(positional[1]) : this.HEAD;
       if (!start) return { ok: false, msg: 'Invalid start point.' };
       if (flags.B) delete this.branches[name];
@@ -439,7 +454,7 @@ class GitEngine {
     if (this.headBranch) this.branches[this.headBranch] = nc.id;
     this.HEAD = nc.id;
     this._emit('graph-update');
-    return { ok: true, msg: `[${this.headBranch} ${nc.id}] ${nc.message}` };
+    return { ok: true, msg: `[${this.headBranch || 'HEAD'} ${nc.id}] ${nc.message}` };
   }
 
   _gitTag(positional, flags) {
@@ -550,7 +565,6 @@ git merge         Join two development histories
 
 git rebase        Reapply commits on top of another base
   <branch>          Rebase current branch onto branch
-  --onto <new> <old>  Rebase a range of commits
 
 git reset         Reset HEAD to a specified state
   --hard <ref>      Reset index and working tree
@@ -604,12 +618,25 @@ git push          Update remote refs
   }
 
   _getCommitsSince(base, tip) {
+    // Commits reachable from tip but NOT reachable from base — i.e. every
+    // ancestor of base is excluded, not just the first one we bump into.
+    // (A plain "stop at base" walk would over-collect if a merge commit's
+    // other parent leads back into base's own history via a different path.)
+    const baseAncestors = new Set();
+    const baseQueue = [base];
+    while (baseQueue.length) {
+      const cur = baseQueue.pop();
+      if (!cur || baseAncestors.has(cur)) continue;
+      baseAncestors.add(cur);
+      (this.commits[cur]?.parents || []).forEach(p => baseQueue.push(p));
+    }
+
     const result = [];
     const visited = new Set();
     const queue = [tip];
     while (queue.length) {
       const cur = queue.shift();
-      if (!cur || cur === base || visited.has(cur)) continue;
+      if (!cur || baseAncestors.has(cur) || visited.has(cur)) continue;
       visited.add(cur);
       result.push(cur);
       (this.commits[cur]?.parents || []).forEach(p => queue.push(p));
