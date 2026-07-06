@@ -2566,11 +2566,10 @@ kbd {
   max-width: calc(100% - 24px);
   height: 210px;
   max-height: calc(100% - 24px);
-  /* Same surface as the tree behind it — no card/shadow look, just a hairline
-     edge so it still reads as a distinct (draggable/closable) region. */
+  /* Same surface as the tree behind it — fully seamless, no border/shadow.
+     The header's title/icon and −/× buttons are the only visual cue that
+     this is a distinct (draggable/closable) region. */
   background: var(--bg-primary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
   overflow: hidden;
   display: flex;
   flex-direction: column;
