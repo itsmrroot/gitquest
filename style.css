@@ -2608,9 +2608,20 @@ kbd {
   display: flex;
   align-items: flex-start;
   padding: 6px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+#goal-panel-body:hover {
+  background: rgba(57, 211, 83, 0.06);
 }
 
 #goal-svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+#goal-modal-svg {
   display: block;
   flex-shrink: 0;
 }

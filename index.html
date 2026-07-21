@@ -294,6 +294,20 @@
   </div>
 </div>
 
+<!-- Goal To Reach — full-size view (click the mini goal panel to open) -->
+<div id="modal-goal" class="modal-overlay">
+  <div class="modal-card" style="max-width:min(900px, 92vw)">
+    <div class="modal-header">
+      <span class="modal-title" data-i18n="goalToReach">🎯 Goal To Reach</span>
+      <div id="goal-modal-note" class="goal-note" style="flex:1;margin:0 16px"></div>
+      <button class="modal-close" title="Minimize" onclick="document.getElementById('modal-goal').classList.remove('show')">−</button>
+    </div>
+    <div class="modal-body" id="goal-modal-body" style="display:flex;align-items:flex-start;justify-content:flex-start;overflow:auto">
+      <svg id="goal-modal-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+  </div>
+</div>
+
 <!-- Success Overlay -->
 <div id="success-overlay">
   <div class="success-card">

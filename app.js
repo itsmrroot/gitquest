@@ -855,6 +855,45 @@ class GitQuestApp {
       reopen.style.display = 'none';
       panel.style.display = 'flex';
     });
+
+    // ── Click the mini graph to pop it open full-size ──
+    // Track mousedown position so a drag-to-pan gesture on the mini graph
+    // doesn't also register as a click and pop the modal open unexpectedly.
+    const body = document.getElementById('goal-panel-body');
+    let downX = 0, downY = 0;
+    body?.addEventListener('mousedown', (e) => { downX = e.clientX; downY = e.clientY; });
+    body?.addEventListener('click', (e) => {
+      if (Math.abs(e.clientX - downX) > 4 || Math.abs(e.clientY - downY) > 4) return;
+      this._showGoalModal();
+    });
+  }
+
+  _showGoalModal() {
+    const goal = (window.GOAL_GRAPHS || {})[this._currentGoalId];
+    if (!goal) return;
+    const modal = document.getElementById('modal-goal');
+    const svg = document.getElementById('goal-modal-svg');
+    const noteEl = document.getElementById('goal-modal-note');
+    if (!modal || !svg) return;
+    if (noteEl) noteEl.textContent = goal.note || '';
+
+    if (!this.goalModalRenderer) this.goalModalRenderer = new GraphRenderer(svg, null);
+
+    // Render at natural size (no shrink-to-fit) — the modal body scrolls if
+    // the graph is bigger than the visible area, so nodes/text stay readable.
+    const commitCount = Object.keys(goal.commits).length;
+    const branchCount = Object.keys(goal.branches).length;
+    const vbW = Math.max(180, commitCount * 130 + 60);
+    const vbH = Math.max(140, (branchCount - 1) * 95 + 140);
+    svg.style.width = vbW + 'px';
+    svg.style.height = vbH + 'px';
+    svg.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`);
+
+    this.goalModalRenderer.panX = 0;
+    this.goalModalRenderer.panY = 0;
+    this.goalModalRenderer.render(goal);
+
+    modal.classList.add('show');
   }
 
   _showGoalPanel(challengeId) {
@@ -863,6 +902,7 @@ class GitQuestApp {
     const goalSvg = document.getElementById('goal-svg');
     if (!panel || !goalSvg) return;
 
+    this._currentGoalId = challengeId;
     const goal = (window.GOAL_GRAPHS || {})[challengeId];
     if (!goal) { panel.style.display = 'none'; return; }
 
