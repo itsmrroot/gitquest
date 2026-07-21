@@ -70,6 +70,9 @@ class GitQuestApp {
       { title: t('welcomeStep4Title'), body: t('welcomeStep4Body') },
       { title: t('welcomeStep5Title'), body: t('welcomeStep5Body') },
       { title: t('welcomeStep6Title'), body: t('welcomeStep6Body') },
+      { title: t('welcomeStep7Title'), body: t('welcomeStep7Body') },
+      { title: t('welcomeStep8Title'), body: t('welcomeStep8Body') },
+      { title: t('welcomeStep9Title'), body: t('welcomeStep9Body') },
     ];
   }
 
@@ -989,15 +992,16 @@ class GitQuestApp {
     document.getElementById('goal-reopen')?.style.setProperty('display', 'none');
     if (notEl) notEl.textContent = goal.note || '';
 
-    // Scale to fit the panel height (never enlarge, floor at 0.55 so complex
-    // graphs never crush nodes below ~10px — panel body scrolls any overflow).
+    // This is just a thumbnail now — clicking it opens the full-size modal
+    // for a clearly readable view — so shrink it well below native node size
+    // instead of letting simple graphs render at 1:1 scale in a tiny box.
     const commitCount = Object.keys(goal.commits).length;
     const branchCount = Object.keys(goal.branches).length;
     // Match renderer constants (OFFSET_X=55, NODE_DX=130, OFFSET_Y=70, NODE_DY=95)
     const vbW = Math.max(180, commitCount * 130 + 60);
     const vbH = Math.max(140, (branchCount - 1) * 95 + 140);
     const BODY_H = 160;
-    const scale = Math.max(0.55, Math.min(1.0, BODY_H / vbH));
+    const scale = Math.max(0.4, Math.min(0.58, BODY_H / vbH));
     goalSvg.style.width  = Math.round(vbW * scale) + 'px';
     goalSvg.style.height = Math.round(vbH * scale) + 'px';
     goalSvg.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`);
