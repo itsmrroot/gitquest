@@ -290,6 +290,12 @@
         <div class="help-row"><span style="color:#fff">◆ Diamond</span><span data-i18n="mergeCommit">merge commit</span></div>
         <div class="help-row"><span style="color:var(--accent)">◉ Ring</span><span data-i18n="currentHead">current HEAD</span></div>
       </div>
+      <div class="help-section">
+        <div class="help-row" id="help-replay-tour" style="cursor:pointer">
+          <span class="help-cmd" data-i18n="replayTour">🎓 Replay tour</span>
+          <span data-i18n="replayTourDesc">See the how-to-use walkthrough again</span>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -322,6 +328,30 @@
   </div>
 </div>
 
+
+<!-- ── WELCOME / HOW-TO-USE TOUR (shown once on first visit) ── -->
+<div id="modal-welcome" class="modal-overlay">
+  <div class="intro-card">
+    <div class="intro-card-header">
+      <div>
+        <div class="intro-tier-badge" data-i18n="welcomeTourBadge">GETTING STARTED</div>
+        <div class="intro-title" id="welcome-title"></div>
+      </div>
+      <button class="intro-close" id="welcome-close">✕</button>
+    </div>
+    <div class="intro-card-body" id="welcome-body"></div>
+    <div class="intro-card-footer">
+      <div class="intro-progress" id="welcome-progress"></div>
+      <div class="intro-nav">
+        <button class="intro-nav-btn" id="welcome-prev" title="Previous">←</button>
+        <button class="intro-nav-btn" id="welcome-next" title="Next">→</button>
+      </div>
+      <button class="intro-start-btn" id="welcome-done">
+        <span id="welcome-done-label"></span> <span class="checkmark">✔</span>
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- ── CHALLENGE INTRO DIALOG ── -->
 <div id="modal-intro" class="modal-overlay">

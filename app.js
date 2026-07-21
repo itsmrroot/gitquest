@@ -38,16 +38,90 @@ class GitQuestApp {
 
     this._buildSidebar();
     this._bindEvents();
+    this._bindWelcomeTour();
     this._updateXP();
     this._applyI18n();
 
-    if (TIERS && TIERS.length && TIERS[0].challenges.length) {
-      this._loadChallenge(TIERS[0], TIERS[0].challenges[0]);
+    const startFirstChallenge = () => {
+      if (TIERS && TIERS.length && TIERS[0].challenges.length) {
+        this._loadChallenge(TIERS[0], TIERS[0].challenges[0]);
+      }
+    };
+
+    if (!localStorage.getItem('gq_seen_welcome')) {
+      this._showWelcomeTour(startFirstChallenge);
+    } else {
+      startFirstChallenge();
     }
 
     this._log('info', t('welcome'));
     this._log('info', t('welcomeSub'));
     this._focusInput();
+  }
+
+  // ══════════════════════════════════════
+  // WELCOME / HOW-TO-USE TOUR
+  // ══════════════════════════════════════
+  _welcomeSteps() {
+    return [
+      { title: t('welcomeStep1Title'), body: t('welcomeStep1Body') },
+      { title: t('welcomeStep2Title'), body: t('welcomeStep2Body') },
+      { title: t('welcomeStep3Title'), body: t('welcomeStep3Body') },
+      { title: t('welcomeStep4Title'), body: t('welcomeStep4Body') },
+      { title: t('welcomeStep5Title'), body: t('welcomeStep5Body') },
+      { title: t('welcomeStep6Title'), body: t('welcomeStep6Body') },
+    ];
+  }
+
+  _bindWelcomeTour() {
+    document.getElementById('welcome-prev')?.addEventListener('click', () => {
+      if (this._welcomeStep > 0) { this._welcomeStep--; this._renderWelcomeStep(); }
+    });
+    document.getElementById('welcome-next')?.addEventListener('click', () => {
+      const steps = this._welcomeSteps();
+      if (this._welcomeStep < steps.length - 1) { this._welcomeStep++; this._renderWelcomeStep(); }
+    });
+    const dismiss = () => {
+      document.getElementById('modal-welcome')?.classList.remove('show');
+      localStorage.setItem('gq_seen_welcome', '1');
+      const cb = this._welcomeDoneCallback;
+      this._welcomeDoneCallback = null;
+      if (cb) cb();
+    };
+    document.getElementById('welcome-close')?.addEventListener('click', dismiss);
+    document.getElementById('welcome-done')?.addEventListener('click', dismiss);
+  }
+
+  _showWelcomeTour(onDone) {
+    this._welcomeStep = 0;
+    this._welcomeDoneCallback = onDone || null;
+    this._renderWelcomeStep();
+    document.getElementById('modal-welcome')?.classList.add('show');
+  }
+
+  _renderWelcomeStep() {
+    const steps = this._welcomeSteps();
+    const i = this._welcomeStep;
+    const step = steps[i];
+    const titleEl = document.getElementById('welcome-title');
+    const bodyEl = document.getElementById('welcome-body');
+    if (titleEl) titleEl.textContent = step.title;
+    if (bodyEl) bodyEl.innerHTML = `<div class="intro-description">${step.body}</div>`;
+
+    const progress = document.getElementById('welcome-progress');
+    if (progress) {
+      progress.innerHTML = steps.map((_, idx) =>
+        `<div class="intro-dot${idx === i ? ' active' : idx < i ? ' done' : ''}"></div>`
+      ).join('');
+    }
+
+    const prevBtn = document.getElementById('welcome-prev');
+    const nextBtn = document.getElementById('welcome-next');
+    if (prevBtn) prevBtn.disabled = i <= 0;
+    if (nextBtn) nextBtn.disabled = i >= steps.length - 1;
+
+    const doneLabel = document.getElementById('welcome-done-label');
+    if (doneLabel) doneLabel.textContent = i >= steps.length - 1 ? t('welcomeStartLabel') : t('welcomeSkipLabel');
   }
 
   // ══════════════════════════════════════
@@ -431,6 +505,11 @@ class GitQuestApp {
 
     document.getElementById('tool-help')?.addEventListener('click', () => {
       document.getElementById('modal-help')?.classList.add('show');
+    });
+
+    document.getElementById('help-replay-tour')?.addEventListener('click', () => {
+      document.getElementById('modal-help')?.classList.remove('show');
+      this._showWelcomeTour(null);
     });
 
     this._bindGoalPanel();
